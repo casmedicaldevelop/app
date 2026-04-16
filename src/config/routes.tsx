@@ -1,9 +1,9 @@
 import { Navigate } from 'react-router-dom'
 import type { RouteObject } from 'react-router-dom'
 
-import LandingLayout from '@/shared/components/layouts/LandingLayout'
-import AuthLayout from '@/shared/components/layouts/AuthLayout'
-import DashboardLayout from '@/shared/components/layouts/DashboardLayout'
+import LandingLayout from '@/shared/layouts/LandingLayout'
+import AuthLayout from '@/shared/layouts/AuthLayout'
+import DashboardLayout from '@/shared/layouts/DashboardLayout'
 import ProtectedRoute from '@/shared/components/ProtectedRoute'
 import PublicOnlyRoute from '@/shared/components/PublicOnlyRoute'
 
