@@ -3,7 +3,7 @@ import { authService } from '../services/auth.service'
 import type { LoginRequest } from '../types/auth.types'
 
 export function useLogin() {
-  const { setAccessToken, setUser } = useAuthStore()
+  const { setAccessToken } = useAuthStore()
 
   const login = async (credentials: LoginRequest) => {
     const { accessToken, refreshToken } = await authService.login(credentials)
