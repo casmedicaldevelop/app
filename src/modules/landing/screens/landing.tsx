@@ -8,8 +8,6 @@ import {
   Clock,
   Headphones,
   Building2,
-  Users,
-  MessageCircle,
   Menu,
   X,
   TrendingUp,
@@ -111,12 +109,6 @@ const CLIENT_TYPES = [
   { Icon: Building2, label: 'Hospitales' },
 ]
 
-const EMAILS = [
-  { label: 'Gerencia', email: 'gerenciageneral@casmedical.com.co' },
-  { label: 'Comercial', email: 'comercial@casmedical.com.co' },
-  { label: 'Compras', email: 'compras@casmedical.com.co' },
-  { label: 'Atención', email: 'atencionalusuario@casmedical.com.co' },
-]
 
 const WA_URL =
   'https://wa.me/573142009088?text=Hola%2C+Bienvenido+a+Casmedical+Casanare%2C+%C2%BFEn+qu%C3%A9+podemos+ayudarte%3F'
