@@ -41,6 +41,7 @@ export default function MipresPage() {
     loading,
     loadPrescription,
     clearPrescription,
+    reloadWorkspace,
     activeTool,
     setActiveTool,
     companyConfigured,
@@ -72,6 +73,9 @@ export default function MipresPage() {
   // protege contra estados intermedios.
   const handleToolChange = (tool: typeof activeTool) => {
     setActiveTool(tool)
+    if (tool === 'routings') {
+      reloadWorkspace()
+    }
     if (tool === 'schedules') {
       void schedules.refetch()
     }
@@ -149,13 +153,30 @@ export default function MipresPage() {
           {hasWorkspace && workspace.routings.length === 0 && <EmptyState />}
           {hasWorkspace && workspace.patient?.exists === false && (
             <RegisterPatientForm
+              mode="create"
               fromMipres={workspace.patient.fromMipres}
               onSubmit={patient.registerPatient}
               onCancel={clearPrescription}
               submitting={patient.registerSubmitting}
             />
           )}
-          {hasWorkspace && workspace.patient?.exists === true && activeTool === 'routings' && (
+          {hasWorkspace &&
+            workspace.patient?.exists === true &&
+            workspace.patient.isComplete === false && (
+              <RegisterPatientForm
+                mode="complete"
+                fromMipres={{
+                  tipoDoc: workspace.patient.tipoDoc,
+                  noDoc: workspace.patient.user.id,
+                  address: workspace.patient.user.address ?? '',
+                }}
+                existingUser={workspace.patient.user}
+                onSubmit={patient.completePatient}
+                onCancel={clearPrescription}
+                submitting={patient.updateSubmitting}
+              />
+            )}
+          {hasWorkspace && workspace.patient?.exists === true && workspace.patient.isComplete === true && activeTool === 'routings' && (
             <RoutingsPanel
               items={workspace.routings}
               prescriptionNumber={workspace.prescriptionNumber}
@@ -164,7 +185,7 @@ export default function MipresPage() {
               companyConfigured={companyConfigured}
             />
           )}
-          {hasWorkspace && workspace.patient?.exists === true && activeTool === 'schedules' && (
+          {hasWorkspace && workspace.patient?.exists === true && workspace.patient.isComplete === true && activeTool === 'schedules' && (
             <SchedulesPanel
               items={schedules.schedules}
               loading={schedules.loading}
@@ -172,9 +193,11 @@ export default function MipresPage() {
               onCancel={schedules.cancelSchedule}
               cancelingIds={schedules.cancelingIds}
               pendingBindCount={routings.bindingIds.size}
+              deliveredScheduleIds={schedules.deliveredScheduleIds}
+              deliveriesReady={schedules.deliveriesReady}
             />
           )}
-          {hasWorkspace && workspace.patient?.exists === true && activeTool === 'entregas' && (
+          {hasWorkspace && workspace.patient?.exists === true && workspace.patient.isComplete === true && activeTool === 'entregas' && (
             <DeliveriesPanel
               items={deliveries.deliveries}
               loading={deliveries.loading}
@@ -184,9 +207,11 @@ export default function MipresPage() {
               cancelingDeliveryIds={deliveries.cancelingIds}
               onReport={deliveries.reportDelivery}
               reportingDeliveryIds={deliveries.reportingIds}
+              deliveryTotals={deliveries.deliveryTotals}
+              totalsReady={deliveries.totalsReady}
             />
           )}
-          {hasWorkspace && workspace.patient?.exists === true && activeTool === 'delivery-reports' && (
+          {hasWorkspace && workspace.patient?.exists === true && workspace.patient.isComplete === true && activeTool === 'delivery-reports' && (
             <DeliveryReportsPanel
               items={deliveryReports.reports}
               loading={deliveryReports.loading}
@@ -196,9 +221,11 @@ export default function MipresPage() {
               onFacturacion={deliveryReports.createFacturacion}
               facturando={deliveryReports.facturando}
               routings={workspace.routings}
+              facturacionPrefill={deliveryReports.facturacionPrefill}
+              prefillReady={deliveryReports.prefillReady}
             />
           )}
-          {hasWorkspace && workspace.patient?.exists === true && activeTool === 'facturacion' && (
+          {hasWorkspace && workspace.patient?.exists === true && workspace.patient.isComplete === true && activeTool === 'facturacion' && (
             <FacturacionPanel
               items={facturacion.facturaciones}
               loading={facturacion.loading}
@@ -289,7 +316,7 @@ function IdleState() {
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
         <FileSearch className="h-8 w-8" />
       </div>
-      <h2 className="text-lg font-bold text-slate-900">Cargá una prescripción para comenzar</h2>
+      <h2 className="text-lg font-bold text-[#2d3436]">Cargá una prescripción para comenzar</h2>
       <p className="mt-1 max-w-sm text-sm text-slate-500">
         Ingresá el número de prescripción en el campo superior derecho. Una vez cargada, todas las
         herramientas quedan disponibles sobre esa prescripción.
@@ -304,7 +331,7 @@ function EmptyState() {
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
         <Inbox className="h-8 w-8" />
       </div>
-      <h2 className="text-lg font-bold text-slate-900">Prescripción sin direccionamientos</h2>
+      <h2 className="text-lg font-bold text-[#2d3436]">Prescripción sin direccionamientos</h2>
       <p className="mt-1 max-w-sm text-sm text-slate-500">
         SISPRO devolvió un array vacío. Verificá el número o consultá con el médico tratante.
       </p>
@@ -315,10 +342,10 @@ function EmptyState() {
 function ErrorState({ message }: { message: string }) {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-[#ee5253]">
         <AlertCircle className="h-8 w-8" />
       </div>
-      <h2 className="text-lg font-bold text-slate-900">No se pudo cargar la prescripción</h2>
+      <h2 className="text-lg font-bold text-[#2d3436]">No se pudo cargar la prescripción</h2>
       <p className="mt-1 max-w-sm text-sm text-slate-500">{message}</p>
     </div>
   )

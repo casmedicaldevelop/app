@@ -3,8 +3,11 @@ import { ChevronDown, CircleCheck, CircleX, Code2, Copy, HelpCircle, Link2, Sear
 import { toast } from 'sonner'
 import type { RoutingItem } from '../types/routings.types'
 import { routingStatus, type RoutingStatus } from '../utils/routings.utils'
-import TvMedProductsModal from '../../../components/tv-med-products-modal'
-import TvMedPickerModal from '../../../components/tv-med-picker-modal'
+import type { BindData } from '../hooks/use-routings'
+import type { TvData } from '../../../../tv-data/types/tv-data.types'
+import type { Doctor } from '../../../../doctors/types/doctor.types'
+import TvDataProductsModal from '../../../components/tv-data-products-modal'
+import TvDataBindingSheet from '../../../components/tv-data-binding-sheet'
 import RequestDebugModal from '../../../components/request-debug-modal'
 import { SESSION_DEBUG_KEYS } from '../../../services/session.service'
 import { useRequestMeta } from '../../../../../lib/request-log'
@@ -12,7 +15,7 @@ import { useRequestMeta } from '../../../../../lib/request-log'
 interface RoutingsPanelProps {
   items: RoutingItem[]
   prescriptionNumber: string
-  onBind: (item: RoutingItem, codSerTecOverride?: string) => void
+  onBind: (item: RoutingItem, bindData: BindData) => void
   bindingIds: Set<number>
   companyConfigured: boolean
 }
@@ -38,7 +41,7 @@ export default function RoutingsPanel({
     <div className="flex flex-col gap-2.5">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold text-slate-900">Direccionamientos</h2>
+          <h2 className="text-base font-bold text-[#2d3436]">Direccionamientos</h2>
           <p className="mt-0.5 text-[12px] text-slate-500">
             Direccionamientos SISPRO de esta prescripción.
           </p>
@@ -91,7 +94,7 @@ export default function RoutingsPanel({
 
 interface RoutingRowProps {
   item: RoutingItem
-  onBind: (item: RoutingItem, codSerTecOverride?: string) => void
+  onBind: (item: RoutingItem, bindData: BindData) => void
   binding: boolean
   companyConfigured: boolean
 }
@@ -103,7 +106,7 @@ function RoutingRow({
   companyConfigured,
 }: RoutingRowProps) {
   const [open, setOpen] = useState(false)
-  const [showTvMed, setShowTvMed] = useState(false)
+  const [showTvData, setShowTvData] = useState(false)
   const status = routingStatus(item)
   const active = status !== 'canceled'
 
@@ -117,9 +120,20 @@ function RoutingRow({
         active ? 'border-slate-200' : 'border-slate-200 opacity-75',
       ].join(' ')}
     >
-      {/* flex-wrap: on narrow screens columns wrap and chevron stays visible
-          at the end of the last line via ml-auto. */}
       <header className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-label={open ? 'Colapsar detalle' : 'Ver detalle completo'}
+          aria-expanded={open}
+          title={open ? 'Colapsar' : 'Ver detalle completo'}
+          className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25"
+        >
+          <ChevronDown
+            className={`h-5 w-5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          />
+        </button>
+
         <div className="w-28 shrink-0">
           <StatusPill status={status} />
         </div>
@@ -133,14 +147,14 @@ function RoutingRow({
         <div className="w-44 shrink-0">
           <Block label="Código del producto">
             <span className="flex items-center gap-1.5">
-              <span className="font-mono text-base font-bold text-slate-900">
+              <span className="font-mono text-base font-bold text-[#2d3436]">
                 {item.CodSerTecAEntregar}
               </span>
               <button
                 type="button"
-                onClick={() => setShowTvMed(true)}
-                aria-label={`Ver productos TvMed para código ${item.CodSerTecAEntregar}`}
-                title={`Ver productos TvMed para código ${item.CodSerTecAEntregar}`}
+                onClick={() => setShowTvData(true)}
+                aria-label={`Ver productos TvData para código ${item.CodSerTecAEntregar}`}
+                title={`Ver productos TvData para código ${item.CodSerTecAEntregar}`}
                 className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-primary/5 hover:text-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25"
               >
                 <HelpCircle className="h-4 w-4" />
@@ -151,22 +165,10 @@ function RoutingRow({
 
         <div className="w-52 shrink-0">
           <Block label={dateLabel}>
-            <span className="font-mono text-base font-bold text-slate-900">{dateValue}</span>
+            <span className="font-mono text-base font-bold text-[#2d3436]">{dateValue}</span>
           </Block>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-label={open ? 'Colapsar detalle' : 'Ver detalle completo'}
-          aria-expanded={open}
-          title={open ? 'Colapsar' : 'Ver detalle completo'}
-          className="ml-auto flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25"
-        >
-          <ChevronDown
-            className={`h-5 w-5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-          />
-        </button>
       </header>
 
       {open && (
@@ -175,14 +177,14 @@ function RoutingRow({
           active={status === 'active'}
           binding={binding}
           companyConfigured={companyConfigured}
-          onBind={(codSerTec) => onBind(item, codSerTec)}
+          onBind={(bindData) => onBind(item, bindData)}
         />
       )}
 
-      {showTvMed && (
-        <TvMedProductsModal
+      {showTvData && (
+        <TvDataProductsModal
           code={item.CodSerTecAEntregar}
-          onClose={() => setShowTvMed(false)}
+          onClose={() => setShowTvData(false)}
         />
       )}
     </article>
@@ -220,7 +222,7 @@ function CopyableId({ value }: { value: number }) {
       onClick={onClick}
       aria-label={`Copiar ID ${value} al portapapeles`}
       title="Clic para copiar"
-      className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-1 -mx-1 font-mono text-base font-bold text-slate-900 transition-colors hover:bg-primary/5 hover:text-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25"
+      className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-1 -mx-1 font-mono text-base font-bold text-[#2d3436] transition-colors hover:bg-primary/5 hover:text-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25"
     >
       <span>{value}</span>
       <Copy className={`h-3.5 w-3.5 transition-colors ${copied ? 'text-emerald-600' : 'text-slate-400'}`} />
@@ -258,7 +260,7 @@ function StatusPill({ status }: { status: RoutingStatus }) {
   }
   if (status === 'canceled') {
     return (
-      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
+      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-[#ee5253]">
         <CircleX className="h-3.5 w-3.5" />
         Anulado
       </span>
@@ -276,7 +278,7 @@ interface ExpandedDetailsProps {
   active: boolean
   binding: boolean
   companyConfigured: boolean
-  onBind: (codSerTecOverride: string) => void
+  onBind: (bindData: BindData) => void
 }
 
 function ExpandedDetails({
@@ -288,6 +290,9 @@ function ExpandedDetails({
 }: ExpandedDetailsProps) {
   const [codSerTecInput, setCodSerTecInput] = useState(item.CodSerTecAEntregar)
   const [showPicker, setShowPicker] = useState(false)
+  const [productSelected, setProductSelected] = useState(false)
+  const [lastSelectedProduct, setLastSelectedProduct] = useState<TvData | null>(null)
+  const [lastSelectedDoctor, setLastSelectedDoctor] = useState<Doctor | null>(null)
   const fields: Array<{ label: string; value: string | number | null }> = [
     { label: 'IDDireccionamiento', value: item.IDDireccionamiento },
     { label: 'TipoTec', value: item.TipoTec },
@@ -314,7 +319,7 @@ function ExpandedDetails({
           >
             <dt className="font-mono text-slate-500">{f.label}</dt>
             <dd
-              className="m-0 truncate font-mono font-semibold text-slate-900"
+              className="m-0 truncate font-mono font-semibold text-[#2d3436]"
               title={String(f.value ?? '')}
             >
               {f.value ?? '—'}
@@ -331,17 +336,16 @@ function ExpandedDetails({
               <input
                 type="text"
                 value={codSerTecInput}
-                onChange={(e) => setCodSerTecInput(e.target.value)}
-                disabled={binding}
-                maxLength={20}
-                className="h-9 w-36 rounded-md border border-slate-300 bg-white px-3 font-mono text-sm font-semibold text-slate-900 focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25 disabled:cursor-not-allowed disabled:bg-slate-100"
+                readOnly
+                tabIndex={-1}
+                className="h-9 w-36 cursor-not-allowed rounded-md border border-slate-300 bg-slate-100 px-3 font-mono text-sm font-bold text-[#2d3436]"
               />
               <button
                 type="button"
                 onClick={() => setShowPicker(true)}
                 disabled={binding}
-                aria-label="Buscar producto en TvMed"
-                title="Buscar producto en TvMed"
+                aria-label="Buscar producto en TvData"
+                title="Buscar producto en TvData"
                 className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-slate-300 bg-white text-slate-500 transition-colors duration-150 hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Search className="h-4 w-4" />
@@ -350,16 +354,33 @@ function ExpandedDetails({
           </label>
           <button
             type="button"
-            onClick={() => onBind(codSerTecInput)}
-            disabled={binding || !companyConfigured || !codSerTecInput.trim()}
+            onClick={() => {
+              if (!lastSelectedProduct || !lastSelectedDoctor) return
+              onBind({
+                codSerTec: codSerTecInput,
+                product: lastSelectedProduct,
+                doctor: lastSelectedDoctor,
+              })
+            }}
+            disabled={
+              binding ||
+              !companyConfigured ||
+              !codSerTecInput.trim() ||
+              !productSelected ||
+              !lastSelectedDoctor
+            }
             title={
               !companyConfigured
                 ? 'Configurá NIT y código del prestador en la empresa antes de amarrar'
                 : !codSerTecInput.trim()
                   ? 'El código no puede estar vacío'
-                  : binding
-                    ? 'Procesando...'
-                    : 'Crear programación para este direccionamiento'
+                  : !productSelected
+                    ? 'Seleccioná un producto TvData antes de amarrar'
+                    : !lastSelectedDoctor
+                      ? 'Asigná un doctor antes de amarrar'
+                      : binding
+                      ? 'Procesando...'
+                      : 'Crear programación para este direccionamiento'
             }
             className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-white transition-colors duration-150 hover:bg-primary/90 focus:outline-none focus:ring-[3px] focus:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -379,9 +400,15 @@ function ExpandedDetails({
       )}
 
       {showPicker && (
-        <TvMedPickerModal
+        <TvDataBindingSheet
+          code={codSerTecInput}
+          lastSelectedId={lastSelectedProduct?.id}
+          selectedDoctor={lastSelectedDoctor}
+          onSelectDoctor={setLastSelectedDoctor}
           onSelect={(picked) => {
             setCodSerTecInput(picked.code)
+            setLastSelectedProduct(picked)
+            setProductSelected(true)
             setShowPicker(false)
           }}
           onClose={() => setShowPicker(false)}

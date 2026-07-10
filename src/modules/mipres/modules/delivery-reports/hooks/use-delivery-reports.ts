@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { deliveryReportsService } from '../services/delivery-reports.service'
@@ -30,6 +30,21 @@ export function useDeliveryReports({ prescriptionNumber, onFacturacionSuccess }:
     enabled: !!prescriptionNumber,
     staleTime: 0,
   })
+
+  // routing_id + unit_price por IDReporteEntrega → precarga de la facturación.
+  const prefillQuery = useQuery({
+    queryKey: ['mipres-facturacion-prefill', prescriptionNumber],
+    queryFn: () => deliveryReportsService.facturacionPrefill(prescriptionNumber!),
+    enabled: !!prescriptionNumber,
+    staleTime: 0,
+  })
+  const facturacionPrefill = useMemo(() => {
+    const m = new Map<string, { routingId: string | null; unitPrice: number }>()
+    for (const p of prefillQuery.data ?? []) {
+      m.set(p.deliveryReportId, { routingId: p.routingId, unitPrice: p.unitPrice })
+    }
+    return m
+  }, [prefillQuery.data])
 
   const cancelDeliveryReport = useCallback(
     async (item: ReporteEntregaItem) => {
@@ -101,5 +116,7 @@ export function useDeliveryReports({ prescriptionNumber, onFacturacionSuccess }:
     createFacturacion,
     facturando,
     refetch: query.refetch,
+    facturacionPrefill,
+    prefillReady: prefillQuery.isSuccess,
   }
 }

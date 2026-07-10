@@ -39,7 +39,7 @@ export default function RawJsonModal({ title, data, onClose }: RawJsonModalProps
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#2d3436]/60 p-4"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -50,7 +50,7 @@ export default function RawJsonModal({ title, data, onClose }: RawJsonModalProps
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-5 py-3">
-          <h2 className="text-sm font-bold text-slate-900">{title}</h2>
+          <h2 className="text-sm font-bold text-[#2d3436]">{title}</h2>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -64,7 +64,7 @@ export default function RawJsonModal({ title, data, onClose }: RawJsonModalProps
               type="button"
               onClick={onClose}
               aria-label="Cerrar"
-              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900 focus:outline-none focus:ring-[3px] focus:ring-primary/25"
+              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-200 hover:text-[#2d3436] focus:outline-none focus:ring-[3px] focus:ring-primary/25"
             >
               <X className="h-4 w-4" />
             </button>

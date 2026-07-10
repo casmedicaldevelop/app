@@ -7,6 +7,8 @@ import { DELIVERY_REPORTS_DEBUG_KEYS } from '../services/delivery-reports.servic
 import { useRequestMeta } from '../../../../../lib/request-log'
 import RequestDebugModal from '../../../components/request-debug-modal'
 
+type FacturacionPrefillMap = Map<string, { routingId: string | null; unitPrice: number }>
+
 interface DeliveryReportsPanelProps {
   items: ReporteEntregaItem[]
   loading: boolean
@@ -16,6 +18,8 @@ interface DeliveryReportsPanelProps {
   onFacturacion: (input: FacturacionInput) => Promise<boolean>
   facturando: boolean
   routings: RoutingItem[]
+  facturacionPrefill: FacturacionPrefillMap
+  prefillReady: boolean
 }
 
 function fmtDate(iso: string | null): string {
@@ -41,6 +45,8 @@ export default function DeliveryReportsPanel({
   onFacturacion,
   facturando,
   routings,
+  facturacionPrefill,
+  prefillReady,
 }: DeliveryReportsPanelProps) {
   const [showDebug, setShowDebug] = useState(false)
   const [expandedId, setExpandedId] = useState<number | null>(null)
@@ -50,7 +56,7 @@ export default function DeliveryReportsPanel({
     <div className="flex flex-col gap-3">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold text-slate-900">Reportes de entrega</h2>
+          <h2 className="text-base font-bold text-[#2d3436]">Reportes de entrega</h2>
           <p className="mt-0.5 text-[12px] text-slate-500">
             Reportes registrados en SISPRO para esta prescripción.
           </p>
@@ -68,7 +74,7 @@ export default function DeliveryReportsPanel({
       </header>
 
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[12.5px] font-semibold text-red-700">
+        <div className="rounded-md border border-[#ee5253]/30 bg-red-50 px-3 py-2 text-[12.5px] font-semibold text-[#ee5253]">
           {error}
         </div>
       )}
@@ -187,6 +193,8 @@ export default function DeliveryReportsPanel({
                               onFacturacion={onFacturacion}
                               facturando={facturando}
                               routings={routings}
+                              facturacionPrefill={facturacionPrefill}
+                              prefillReady={prefillReady}
                             />
                           </td>
                         </tr>
@@ -241,7 +249,7 @@ function CopyableId({ value }: { value: number }) {
       onClick={onClick}
       aria-label={`Copiar ID ${value} al portapapeles`}
       title="Clic para copiar"
-      className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-1 -mx-1 font-mono text-[12.5px] font-bold text-slate-900 transition-colors hover:bg-primary/5 hover:text-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25"
+      className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-1 -mx-1 font-mono text-[12.5px] font-bold text-[#2d3436] transition-colors hover:bg-primary/5 hover:text-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25"
     >
       <span>{value}</span>
       <Copy className={`h-3.5 w-3.5 transition-colors ${copied ? 'text-emerald-600' : 'text-slate-400'}`} />
@@ -255,12 +263,16 @@ function ExpandedReportFields({
   onFacturacion,
   facturando,
   routings,
+  facturacionPrefill,
+  prefillReady,
 }: {
   item: ReporteEntregaItem
   active: boolean
   onFacturacion: (input: FacturacionInput) => Promise<boolean>
   facturando: boolean
   routings: RoutingItem[]
+  facturacionPrefill: FacturacionPrefillMap
+  prefillReady: boolean
 }) {
   const fields: Array<{ label: string; value: string | number | null }> = [
     { label: 'IDReporteEntrega', value: item.IDReporteEntrega },
@@ -293,7 +305,7 @@ function ExpandedReportFields({
           >
             <dt className="font-mono text-slate-500">{f.label}</dt>
             <dd
-              className="m-0 truncate font-mono font-semibold text-slate-900"
+              className="m-0 truncate font-mono font-semibold text-[#2d3436]"
               title={String(f.value ?? '')}
             >
               {f.value ?? '—'}
@@ -307,6 +319,8 @@ function ExpandedReportFields({
           onFacturacion={onFacturacion}
           facturando={facturando}
           routings={routings}
+          facturacionPrefill={facturacionPrefill}
+          prefillReady={prefillReady}
         />
       )}
     </div>
@@ -318,42 +332,36 @@ function InlineFacturacionForm({
   onFacturacion,
   facturando,
   routings,
+  facturacionPrefill,
+  prefillReady,
 }: {
   item: ReporteEntregaItem
   onFacturacion: (input: FacturacionInput) => Promise<boolean>
   facturando: boolean
   routings: RoutingItem[]
+  facturacionPrefill: FacturacionPrefillMap
+  prefillReady: boolean
 }) {
-  const prefilledValorUnit = useMemo(() => {
-    const cant = Number(item.CantTotEntregada)
-    if (!Number.isFinite(cant) || cant <= 0) return ''
-    return String(Math.ceil(item.ValorEntregado / cant))
-  }, [item.CantTotEntregada, item.ValorEntregado])
-
-  const [idDireccionamiento, setIdDireccionamiento] = useState('')
-  const [noFactura, setNoFactura] = useState('')
-  const [valorUnit, setValorUnit] = useState('')
-  const [valorUnitTouched, setValorUnitTouched] = useState(false)
-  const [pendingPayload, setPendingPayload] = useState<FacturacionInput | null>(null)
-  const effectiveValorUnit = valorUnitTouched ? valorUnit : prefilledValorUnit
-
+  // El ID de direccionamiento y el valor unitario salen del radicado (por
+  // IDReporteEntrega), no se piden al usuario. Solo se pide el código de factura.
+  const prefill = facturacionPrefill.get(String(item.IDReporteEntrega))
   const matchedRouting = useMemo(() => {
-    const n = Number(idDireccionamiento)
+    const routingId = prefill?.routingId
+    if (routingId == null) return null
+    const n = Number(routingId)
     if (!Number.isFinite(n) || n <= 0) return null
     return routings.find((r) => r.ID === n) ?? null
-  }, [idDireccionamiento, routings])
+  }, [prefill?.routingId, routings])
+  const valorUnit = prefill?.unitPrice != null ? String(prefill.unitPrice) : ''
 
-  const canGenerate =
-    !facturando &&
-    !!matchedRouting &&
-    /^[A-Za-z0-9_-]+$/.test(noFactura) &&
-    /^\d{1,10}$/.test(effectiveValorUnit)
+  const [noFactura, setNoFactura] = useState('')
+  const [pendingPayload, setPendingPayload] = useState<FacturacionInput | null>(null)
+
+  const ready = prefillReady && !!matchedRouting && /^\d{1,10}$/.test(valorUnit)
+  const canGenerate = !facturando && ready && /^[A-Za-z0-9_-]+$/.test(noFactura)
 
   const handleGenerate = () => {
-    if (!matchedRouting) {
-      toast.error('No existe un direccionamiento con ese ID en la prescripción')
-      return
-    }
+    if (!matchedRouting) return
     const payload: FacturacionInput = {
       NoPrescripcion: matchedRouting.NoPrescripcion,
       TipoTec: matchedRouting.TipoTec,
@@ -367,10 +375,11 @@ function InlineFacturacionForm({
       CodEPS: matchedRouting.CodEPS,
       CodSerTecAEntregado: matchedRouting.CodSerTecAEntregar,
       CantUnMinDis: item.CantTotEntregada,
-      ValorUnitFacturado: effectiveValorUnit,
+      ValorUnitFacturado: valorUnit,
       ValorTotFacturado: String(item.ValorEntregado),
       CuotaModer: '0',
       Copago: '0',
+      deliveryReportId: String(item.IDReporteEntrega),
     }
     setPendingPayload(payload)
   }
@@ -378,12 +387,7 @@ function InlineFacturacionForm({
   const handleConfirm = async () => {
     if (!pendingPayload) return
     const ok = await onFacturacion(pendingPayload)
-    if (ok) {
-      setIdDireccionamiento('')
-      setNoFactura('')
-      setValorUnit('')
-      setValorUnitTouched(false)
-    }
+    if (ok) setNoFactura('')
     setPendingPayload(null)
   }
 
@@ -396,69 +400,38 @@ function InlineFacturacionForm({
     <section className="rounded-md border border-slate-200 bg-white p-3">
       <header className="mb-2.5 flex items-center gap-2">
         <Receipt className="h-3.5 w-3.5 text-primary" />
-        <h4 className="text-[12.5px] font-bold text-slate-900">Facturar este reporte</h4>
+        <h4 className="text-[12.5px] font-bold text-[#2d3436]">Facturar este reporte</h4>
       </header>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <label className="flex flex-col gap-1">
-          <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">
-            ID de direccionamiento
-          </span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={idDireccionamiento}
-            onChange={(e) => setIdDireccionamiento(e.target.value.replace(/\D+/g, ''))}
-            placeholder="digite el ID del direccionamiento"
-            disabled={facturando}
-            className="h-9 rounded-md border border-slate-300 bg-white px-2.5 font-mono text-[12.5px] text-slate-900 focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/20"
-          />
-          {idDireccionamiento && !matchedRouting && (
-            <span className="text-[11px] font-semibold text-rose-600">
-              No existe un direccionamiento con ID {idDireccionamiento} en esta prescripción.
+      {prefillReady && !matchedRouting ? (
+        <p className="text-[11.5px] font-semibold text-rose-600">
+          No se puede facturar: no se encontró el radicado (direccionamiento/valor) de este reporte.
+        </p>
+      ) : (
+        <div className="flex items-end gap-2">
+          <label className="flex w-full flex-col gap-1 sm:max-w-xs">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">
+              Código de factura
             </span>
-          )}
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">
-            No. factura
-          </span>
-          <input
-            type="text"
-            value={noFactura}
-            onChange={(e) => setNoFactura(e.target.value)}
-            placeholder="alfanumérico (A-Z 0-9 _ -)"
-            disabled={facturando}
-            className="h-9 rounded-md border border-slate-300 bg-white px-2.5 font-mono text-[12.5px] text-slate-900 focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/20"
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">
-            Valor unitario facturado <span className="text-slate-400">· prellenado, editable</span>
-          </span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={effectiveValorUnit}
-            onChange={(e) => {
-              setValorUnit(e.target.value.replace(/\D+/g, ''))
-              setValorUnitTouched(true)
-            }}
-            disabled={facturando}
-            className="h-9 rounded-md border border-slate-300 bg-white px-2.5 font-mono text-[12.5px] text-slate-900 focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/20"
-          />
-        </label>
-      </div>
-      <div className="mt-3 flex justify-end">
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={!canGenerate}
-          className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3.5 text-[12.5px] font-bold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-slate-300"
-        >
-          <Receipt className="h-3.5 w-3.5" />
-          Generar
-        </button>
-      </div>
+            <input
+              type="text"
+              value={noFactura}
+              onChange={(e) => setNoFactura(e.target.value)}
+              placeholder="alfanumérico (A-Z 0-9 _ -)"
+              disabled={facturando || !ready}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2.5 font-mono text-[12.5px] text-[#2d3436] focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-slate-100"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={!canGenerate}
+            className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3.5 text-[12.5px] font-bold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            <Receipt className="h-3.5 w-3.5" />
+            Generar
+          </button>
+        </div>
+      )}
       {pendingPayload && (
         <FacturacionConfirmModal
           payload={pendingPayload}
@@ -486,7 +459,7 @@ function FacturacionConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#2d3436]/50 p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="facturacion-confirm-title"
@@ -497,7 +470,7 @@ function FacturacionConfirmModal({
       <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl">
         <header className="flex items-center gap-2 border-b border-slate-200 bg-primary/5 px-5 py-3">
           <Receipt className="h-4 w-4 text-primary" />
-          <h3 id="facturacion-confirm-title" className="text-[14px] font-bold text-slate-900">
+          <h3 id="facturacion-confirm-title" className="text-[14px] font-bold text-[#2d3436]">
             Confirmar facturación
           </h3>
         </header>
@@ -513,7 +486,7 @@ function FacturacionConfirmModal({
                 className="flex items-baseline justify-between gap-3 border-b border-slate-200/70 py-1"
               >
                 <dt className="font-mono text-slate-500">{key}</dt>
-                <dd className="m-0 truncate font-mono font-semibold text-slate-900" title={String(value)}>
+                <dd className="m-0 truncate font-mono font-semibold text-[#2d3436]" title={String(value)}>
                   {String(value)}
                 </dd>
               </div>

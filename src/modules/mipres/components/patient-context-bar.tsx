@@ -16,8 +16,8 @@ export default function PatientContextBar({ workspace, error, onEditPatient }: P
   if (error) {
     return (
       <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200 bg-white px-6 py-3">
-        <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
-        <div className="text-sm text-red-600">{error}</div>
+        <AlertCircle className="h-5 w-5 shrink-0 text-[#ee5253]" />
+        <div className="text-sm text-[#ee5253]">{error}</div>
       </div>
     )
   }
@@ -45,7 +45,7 @@ export default function PatientContextBar({ workspace, error, onEditPatient }: P
           <UserPlus className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <div className="text-sm font-bold text-slate-900">Paciente nuevo</div>
+          <div className="text-sm font-bold text-[#2d3436]">Paciente nuevo</div>
           <div className="text-xs text-slate-500">
             {fromMipres.tipoDoc} {fromMipres.noDoc} · {fromMipres.address}
           </div>
@@ -68,7 +68,7 @@ export default function PatientContextBar({ workspace, error, onEditPatient }: P
         {initials}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-bold text-slate-900">{composeFullName(u)}</div>
+        <div className="truncate text-sm font-bold text-[#2d3436]">{composeFullName(u)}</div>
         <div className="text-xs text-slate-500">
           {tipoDoc} {u.id}
         </div>

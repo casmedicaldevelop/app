@@ -8,7 +8,7 @@ export interface MipresFromPrescription {
 }
 
 export type PatientResolution =
-  | { exists: true; user: ServiceUser; tipoDoc: string }
+  | { exists: true; isComplete: boolean; user: ServiceUser; tipoDoc: string }
   | { exists: false; fromMipres: MipresFromPrescription }
 
 export interface WorkspaceResponse {

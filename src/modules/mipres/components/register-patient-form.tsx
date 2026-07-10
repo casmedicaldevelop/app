@@ -1,21 +1,43 @@
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { CalendarDays, Hash, Info, UserCheck, UserPlus } from 'lucide-react'
 import type { BirthDateMode, RegisterPatientFormValues } from '../types/patient.types'
 import type { MipresFromPrescription } from '../types/shared.types'
+import type {
+  DocumentType,
+  Gender,
+  HealthcareRegime,
+  ServiceUser,
+} from '../../users/types/service-user.types'
+import { normalizeDocumentType } from '../utils/document-type'
+
+export type RegisterPatientFormMode = 'create' | 'complete'
 
 interface RegisterPatientFormProps {
+  mode: RegisterPatientFormMode
   fromMipres: MipresFromPrescription
+  existingUser?: ServiceUser | null
   onSubmit: (form: RegisterPatientFormValues) => Promise<void>
   onCancel: () => void
   submitting: boolean
 }
 
+function isoDateOnly(value: string | null | undefined): string {
+  if (!value) return ''
+  return value.slice(0, 10)
+}
+
 export default function RegisterPatientForm({
+  mode,
   fromMipres,
+  existingUser,
   onSubmit,
   onCancel,
   submitting,
 }: RegisterPatientFormProps) {
+  const initialDocumentType: DocumentType | '' =
+    existingUser?.documentType ?? normalizeDocumentType(fromMipres.tipoDoc) ?? ''
+
   const {
     register,
     handleSubmit,
@@ -25,21 +47,34 @@ export default function RegisterPatientForm({
     formState: { errors },
   } = useForm<RegisterPatientFormValues>({
     defaultValues: {
-      address: fromMipres.address,
+      documentType: initialDocumentType,
+      gender: (existingUser?.gender ?? '') as Gender | '',
+      firstName: existingUser?.firstName ?? '',
+      secondName: existingUser?.secondName ?? '',
+      firstSurname: existingUser?.firstSurname ?? '',
+      secondSurname: existingUser?.secondSurname ?? '',
+      phone: existingUser?.phone ?? '',
+      email: existingUser?.email ?? '',
+      city: existingUser?.city ?? '',
+      neighborhood: existingUser?.neighborhood ?? '',
+      address: existingUser?.address ?? '',
+      description: existingUser?.description ?? '',
+      healthcareRegime: (existingUser?.healthcareRegime ?? '') as HealthcareRegime | '',
       birthMode: 'exact',
+      birthDate: isoDateOnly(existingUser?.birthDate),
     },
   })
+
+  useEffect(() => {
+    setValue('documentType', initialDocumentType)
+  }, [initialDocumentType, setValue])
 
   const birthMode: BirthDateMode = watch('birthMode')
 
   // Toggle SYNCS the other representation instead of clearing it.
-  // The user keeps whatever they typed; switching modes just shows the equivalent.
-  // The submit logic (in useWorkspace.registerPatient) uses form.birthMode to
-  // decide which value is authoritative.
   const toggleBirthMode = () => {
     const { birthDate, age } = getValues()
     if (birthMode === 'exact') {
-      // exact → age: derive age from birthDate (if any)
       if (birthDate) {
         const year = parseInt(birthDate.slice(0, 4), 10)
         if (!Number.isNaN(year)) {
@@ -49,10 +84,12 @@ export default function RegisterPatientForm({
       }
       setValue('birthMode', 'age')
     } else {
-      // age → exact: derive birthDate from age (if any)
       if (age != null && !Number.isNaN(age)) {
         const targetYear = new Date().getFullYear() - age
-        setValue('birthDate', `${String(targetYear).padStart(4, '0')}-01-01`)
+        const existingYear = birthDate ? parseInt(birthDate.slice(0, 4), 10) : NaN
+        if (!birthDate || Number.isNaN(existingYear) || existingYear !== targetYear) {
+          setValue('birthDate', `${String(targetYear).padStart(4, '0')}-01-01`)
+        }
       }
       setValue('birthMode', 'exact')
     }
@@ -64,39 +101,75 @@ export default function RegisterPatientForm({
         <div className="mb-5 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
           <UserPlus className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
           <div>
-            <div className="text-sm font-bold text-slate-900">
-              Paciente no registrado en CASMEDICAL
+            <div className="text-sm font-bold text-[#2d3436]">
+              {mode === 'create'
+                ? 'Usuario no registrado en CASMEDICAL'
+                : 'Usuario con datos incompletos'}
             </div>
             <div className="mt-1 text-xs text-slate-600">
-              Datos detectados desde MIPRES:{' '}
-              <strong>
-                {fromMipres.tipoDoc} {fromMipres.noDoc}
-              </strong>{' '}
-              · {fromMipres.address}. Completá los datos faltantes para habilitar el resto del workspace.
+              {mode === 'create'
+                ? 'Completá todos los datos para habilitar el resto del workspace.'
+                : 'El usuario ya existe pero le faltan campos obligatorios. Completá lo que falta para habilitar el resto del workspace.'}
             </div>
           </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <Field label="Tipo de documento" required>
+              <input
+                type="text"
+                value={initialDocumentType || fromMipres.tipoDoc}
+                readOnly
+                disabled
+                className="h-10 w-full rounded-lg border border-slate-300 bg-slate-100 px-3 text-sm font-mono font-bold text-[#2d3436]"
+              />
+              <input type="hidden" {...register('documentType', { required: 'Requerido' })} />
+            </Field>
+            <Field label="Número de documento" required>
+              <input
+                type="text"
+                value={fromMipres.noDoc}
+                readOnly
+                disabled
+                className="h-10 w-full rounded-lg border border-slate-300 bg-slate-100 px-3 text-sm font-mono font-bold text-[#2d3436]"
+              />
+            </Field>
             <Field label="Primer nombre" required error={errors.firstName?.message}>
               <input
                 {...register('firstName', { required: 'Requerido' })}
-                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm uppercase text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm uppercase text-[#2d3436] placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                 autoFocus
               />
             </Field>
-            <Field label="Segundo nombre">
-              <input {...register('secondName')} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm uppercase text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <Field label="Segundo nombre" required error={errors.secondName?.message}>
+              <input
+                {...register('secondName', { required: 'Requerido' })}
+                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm uppercase text-[#2d3436] placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
             </Field>
             <Field label="Primer apellido" required error={errors.firstSurname?.message}>
               <input
                 {...register('firstSurname', { required: 'Requerido' })}
-                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm uppercase text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm uppercase text-[#2d3436] placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </Field>
-            <Field label="Segundo apellido">
-              <input {...register('secondSurname')} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm uppercase text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <Field label="Segundo apellido" required error={errors.secondSurname?.message}>
+              <input
+                {...register('secondSurname', { required: 'Requerido' })}
+                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm uppercase text-[#2d3436] placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </Field>
+            <Field label="Género" required error={errors.gender?.message}>
+              <select
+                {...register('gender', { required: 'Requerido' })}
+                defaultValue=""
+                className="h-10 w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 text-sm text-[#2d3436] transition-colors focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25"
+              >
+                <option value="" disabled>SELECCIONAR...</option>
+                <option value="MASCULINO">MASCULINO</option>
+                <option value="FEMENINO">FEMENINO</option>
+              </select>
             </Field>
             <Field
               label="Teléfono"
@@ -114,36 +187,49 @@ export default function RegisterPatientForm({
                 })}
                 inputMode="tel"
                 maxLength={10}
-                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-[#2d3436] placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </Field>
-            <Field label="Email" error={errors.email?.message}>
+            <Field label="Email" required error={errors.email?.message}>
               <input
                 {...register('email', {
+                  required: 'Requerido',
                   pattern: {
                     value: /^[^@\s]+@[^@\s]+\.[^@\s]+$/,
                     message: 'Email inválido',
                   },
                 })}
                 type="email"
-                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm uppercase text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm uppercase text-[#2d3436] placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </Field>
-            <Field label="Ciudad">
-              <input {...register('city')} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm uppercase text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <Field label="Ciudad" required error={errors.city?.message}>
+              <input
+                {...register('city', { required: 'Requerido' })}
+                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm uppercase text-[#2d3436] placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
             </Field>
-            <Field label="Dirección">
-              <input {...register('address')} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm uppercase text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <Field label="Barrio" required error={errors.neighborhood?.message}>
+              <input
+                {...register('neighborhood', { required: 'Requerido' })}
+                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm uppercase text-[#2d3436] placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </Field>
+            <Field label="Dirección" required error={errors.address?.message}>
+              <input
+                {...register('address', { required: 'Requerido' })}
+                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm uppercase text-[#2d3436] placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
             </Field>
             <Field label="Régimen de salud" required error={errors.healthcareRegime?.message}>
               <select
                 {...register('healthcareRegime', { required: 'Requerido' })}
                 defaultValue=""
-                className="h-10 w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25"
+                className="h-10 w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 text-sm text-[#2d3436] transition-colors focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25"
               >
                 <option value="" disabled>SELECCIONAR...</option>
-                <option value="CONTRIBUTORY">CONTRIBUTIVO</option>
-                <option value="SUBSIDIZED">SUBSIDIADO</option>
+                <option value="CONTRIBUTIVO">CONTRIBUTIVO</option>
+                <option value="SUBSIDIADO">SUBSIDIADO</option>
               </select>
             </Field>
             <div>
@@ -152,17 +238,21 @@ export default function RegisterPatientForm({
                 className="mb-1.5 block text-[13px] font-semibold text-slate-700"
               >
                 {birthMode === 'exact' ? 'Fecha de nacimiento' : 'Edad aproximada'}
-                <span className="ml-1.5 text-[11px] font-normal text-slate-400">opcional</span>
+                <span className="ml-0.5 text-[#ee5253]">*</span>
               </label>
 
               <div className="relative">
-                {/* Both inputs are rendered always; hidden one keeps its value
-                    so toggling back and forth never loses content. */}
                 <input
                   id="birth-input"
                   type="date"
-                  {...register('birthDate')}
-                  className={`${birthMode === 'exact' ? '' : 'hidden'} h-10 w-full rounded-lg border border-slate-300 bg-white pl-3 pr-12 text-sm text-slate-900 placeholder:text-slate-400 transition-colors focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none`}
+                  {...register('birthDate', {
+                    validate: (v) => {
+                      if (getValues('birthMode') !== 'exact') return true
+                      return (v && v.length > 0) || 'Requerido'
+                    },
+                  })}
+                  onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                  className={`${birthMode === 'exact' ? '' : 'hidden'} h-10 w-full rounded-lg border border-slate-300 bg-white pl-3 pr-12 text-sm text-[#2d3436] placeholder:text-slate-400 transition-colors focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none`}
                 />
                 <input
                   type="number"
@@ -172,15 +262,16 @@ export default function RegisterPatientForm({
                   placeholder="Ej. 30"
                   {...register('age', {
                     valueAsNumber: true,
-                    min: { value: 1, message: 'Edad inválida (mín. 1)' },
-                    max: { value: 120, message: 'Edad inválida (máx. 120)' },
-                    validate: (v) =>
-                      v == null ||
-                      Number.isNaN(v) ||
-                      Number.isInteger(v) ||
-                      'Debe ser un número entero',
+                    validate: (v) => {
+                      if (getValues('birthMode') !== 'age') return true
+                      if (v == null || Number.isNaN(v)) return 'Requerido'
+                      if (!Number.isInteger(v)) return 'Debe ser un número entero'
+                      if (v < 1) return 'Edad inválida (mín. 1)'
+                      if (v > 120) return 'Edad inválida (máx. 120)'
+                      return true
+                    },
                   })}
-                  className={`${birthMode === 'age' ? '' : 'hidden'} h-10 w-full rounded-lg border border-slate-300 bg-white pl-3 pr-20 text-sm text-slate-900 placeholder:text-slate-400 transition-colors focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
+                  className={`${birthMode === 'age' ? '' : 'hidden'} h-10 w-full rounded-lg border border-slate-300 bg-white pl-3 pr-20 text-sm text-[#2d3436] placeholder:text-slate-400 transition-colors focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
                 />
 
                 {birthMode === 'age' && (
@@ -212,18 +303,32 @@ export default function RegisterPatientForm({
                 </button>
               </div>
 
-              {errors.age && birthMode === 'age' && (
-                <span className="mt-1.5 block text-[11.5px] font-medium text-red-600">
+              {birthMode === 'exact' && errors.birthDate && (
+                <span className="mt-1.5 block text-[11.5px] font-medium text-[#ee5253]">
+                  {errors.birthDate.message}
+                </span>
+              )}
+              {birthMode === 'age' && errors.age && (
+                <span className="mt-1.5 block text-[11.5px] font-medium text-[#ee5253]">
                   {errors.age.message}
                 </span>
               )}
+            </div>
+            <div className="sm:col-span-2">
+              <Field label="Descripción" error={errors.description?.message}>
+                <textarea
+                  {...register('description')}
+                  rows={3}
+                  className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm uppercase text-[#2d3436] placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </Field>
             </div>
           </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[12px] text-slate-500">
             <Info className="h-3.5 w-3.5" />
             La cédula <strong className="font-mono text-slate-700">{fromMipres.noDoc}</strong> queda
-            asignada al paciente y no se puede editar después.
+            asignada al usuario y no se puede editar después.
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
@@ -241,7 +346,11 @@ export default function RegisterPatientForm({
               className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <UserCheck className="h-4 w-4" />
-              {submitting ? 'Registrando...' : 'Registrar y continuar'}
+              {submitting
+                ? 'Guardando...'
+                : mode === 'create'
+                  ? 'Registrar y continuar'
+                  : 'Completar y continuar'}
             </button>
           </div>
         </form>
@@ -267,11 +376,11 @@ function Field({
     <label className="block">
       <span className="mb-1.5 block text-[13px] font-semibold text-slate-700">
         {label}
-        {required && <span className="ml-0.5 text-red-600">*</span>}
+        {required && <span className="ml-0.5 text-[#ee5253]">*</span>}
         {hint && <span className="ml-1.5 text-[11px] font-normal text-slate-400">({hint})</span>}
       </span>
       {children}
-      {error && <span className="mt-1 block text-[11.5px] font-medium text-red-600">{error}</span>}
+      {error && <span className="mt-1 block text-[11.5px] font-medium text-[#ee5253]">{error}</span>}
     </label>
   )
 }

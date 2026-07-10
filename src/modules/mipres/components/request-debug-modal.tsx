@@ -89,7 +89,7 @@ export default function RequestDebugModal({ title, meta, onClose }: RequestDebug
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[#2d3436]/60 p-0 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="request-debug-title"
@@ -101,7 +101,7 @@ export default function RequestDebugModal({ title, meta, onClose }: RequestDebug
       >
         <header className="flex items-start justify-between gap-3 border-b border-slate-200 bg-slate-50 px-5 py-3.5">
           <div>
-            <h2 id="request-debug-title" className="text-base font-bold text-slate-900">
+            <h2 id="request-debug-title" className="text-base font-bold text-[#2d3436]">
               {title}
             </h2>
             {meta ? (
@@ -129,7 +129,7 @@ export default function RequestDebugModal({ title, meta, onClose }: RequestDebug
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
-            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900"
+            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-200 hover:text-[#2d3436]"
           >
             <X className="h-4 w-4" />
           </button>
@@ -202,7 +202,7 @@ export default function RequestDebugModal({ title, meta, onClose }: RequestDebug
             <div className="space-y-3">
               <dl className="grid grid-cols-[120px_1fr] gap-x-3 gap-y-1.5 text-[12px]">
                 <dt className="font-semibold text-slate-500">Método</dt>
-                <dd className="font-mono font-bold text-slate-900">{meta.method}</dd>
+                <dd className="font-mono font-bold text-[#2d3436]">{meta.method}</dd>
                 <dt className="font-semibold text-slate-500">URL</dt>
                 <dd className="font-mono text-slate-800 break-all">{meta.url}</dd>
                 <dt className="font-semibold text-slate-500">Iniciada</dt>

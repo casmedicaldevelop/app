@@ -35,7 +35,7 @@ export default function ConfirmCancelDeliveryReportModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#2d3436]/60 p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-cancel-delivery-report-title"
@@ -47,11 +47,11 @@ export default function ConfirmCancelDeliveryReportModal({
       >
         <header className="flex items-start justify-between gap-3 border-b border-slate-200 bg-red-50/60 px-5 py-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100 text-[#ee5253]">
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div>
-              <h2 id="confirm-cancel-delivery-report-title" className="text-base font-bold text-slate-900">
+              <h2 id="confirm-cancel-delivery-report-title" className="text-base font-bold text-[#2d3436]">
                 Anular reporte de entrega
               </h2>
               <p className="mt-0.5 text-xs text-slate-500">
@@ -64,7 +64,7 @@ export default function ConfirmCancelDeliveryReportModal({
             onClick={onClose}
             disabled={loading}
             aria-label="Cerrar"
-            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900 focus:outline-none focus:ring-[3px] focus:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-200 hover:text-[#2d3436] focus:outline-none focus:ring-[3px] focus:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <X className="h-4 w-4" />
           </button>
@@ -73,7 +73,7 @@ export default function ConfirmCancelDeliveryReportModal({
         <div className="px-5 py-4 text-sm text-slate-700">
           <p className="mb-3">
             ¿Anular el reporte de entrega{' '}
-            <span className="font-mono font-bold text-slate-900">{report.IDReporteEntrega}</span>?
+            <span className="font-mono font-bold text-[#2d3436]">{report.IDReporteEntrega}</span>?
           </p>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 rounded-md border border-slate-200 bg-slate-50 p-3 text-[12px]">
             <dt className="font-semibold text-slate-500">Entrega referenciada</dt>
@@ -102,7 +102,7 @@ export default function ConfirmCancelDeliveryReportModal({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-[3px] focus:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-[#ee5253] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#d63e3e] focus:outline-none focus:ring-[3px] focus:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? (
               <>

@@ -26,4 +26,21 @@ export interface CreateSchedulePayload {
   codSedeProv: string
   codSerTecAEntregar: string
   cantTotAEntregar: string
+  // Radicado: persistido en backend tras respuesta correcta de SISPRO.
+  doctorDocument: string
+  userDocument: string
+  prescriptionNumber: string
+  medicationName: string
+  inventoryCode: string | null
+  unitPrice: number
+}
+
+export interface CreateScheduleResponse {
+  sispro: unknown
+  radicado: {
+    id: number
+    scheduleId: string
+    status: string
+    [key: string]: unknown
+  }
 }

@@ -1,5 +1,5 @@
 import { apiFetch } from '../../../lib/api-fetch'
-import type { Company, UpsertCompanyPayload, UpdateMipresPayload, UpdateAiPayload } from '../types/company.types'
+import type { Company, UpsertCompanyPayload, UpdateMipresPayload } from '../types/company.types'
 
 export const companyService = {
   async get(): Promise<Company> {
@@ -15,13 +15,6 @@ export const companyService = {
 
   async updateMipres(payload: UpdateMipresPayload): Promise<Company> {
     return apiFetch<Company>('/company/mipres', {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    })
-  },
-
-  async updateAi(payload: UpdateAiPayload): Promise<Company> {
-    return apiFetch<Company>('/company/ai', {
       method: 'PATCH',
       body: JSON.stringify(payload),
     })

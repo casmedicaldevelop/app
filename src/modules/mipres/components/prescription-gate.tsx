@@ -47,7 +47,7 @@ export default function PrescriptionGate({
         placeholder="Nº de prescripción"
         autoComplete="off"
         spellCheck={false}
-        className="h-10 w-56 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+        className="h-10 w-56 rounded-lg border border-slate-300 bg-white px-3 text-sm text-[#2d3436] placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
       />
       <button
         type="button"

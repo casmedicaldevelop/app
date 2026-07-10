@@ -15,6 +15,9 @@ interface DeliveriesPanelProps {
   cancelingDeliveryIds: Set<number>
   onReport: (item: EntregaItem, valorEntregado: string) => Promise<boolean>
   reportingDeliveryIds: Set<number>
+  /** total_price por IDEntrega (string) → precarga, solo lectura, del valor a reportar. */
+  deliveryTotals: Map<string, number>
+  totalsReady: boolean
 }
 
 function fmtDate(iso: string | null): string {
@@ -51,6 +54,8 @@ export default function DeliveriesPanel({
   cancelingDeliveryIds,
   onReport,
   reportingDeliveryIds,
+  deliveryTotals,
+  totalsReady,
 }: DeliveriesPanelProps) {
   const [showDebug, setShowDebug] = useState(false)
   const [expandedId, setExpandedId] = useState<number | null>(null)
@@ -60,7 +65,7 @@ export default function DeliveriesPanel({
     <div className="flex flex-col gap-3">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold text-slate-900">Entregas</h2>
+          <h2 className="text-base font-bold text-[#2d3436]">Entregas</h2>
           <p className="mt-0.5 text-[12px] text-slate-500">
             Entregas registradas en SISPRO para esta prescripción.
           </p>
@@ -88,7 +93,7 @@ export default function DeliveriesPanel({
       </header>
 
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[12.5px] font-semibold text-red-700">
+        <div className="rounded-md border border-[#ee5253]/30 bg-red-50 px-3 py-2 text-[12.5px] font-semibold text-[#ee5253]">
           {error}
         </div>
       )}
@@ -201,6 +206,8 @@ export default function DeliveriesPanel({
                               status={status}
                               onReport={onReport}
                               reporting={reportingDeliveryIds.has(item.IDEntrega)}
+                              total={deliveryTotals.get(String(item.IDEntrega))}
+                              totalsReady={totalsReady}
                             />
                           </td>
                         </tr>
@@ -230,16 +237,25 @@ interface ExpandedDeliveryFieldsProps {
   status: EntregaStatus
   onReport: (item: EntregaItem, valorEntregado: string) => Promise<boolean>
   reporting: boolean
+  total: number | undefined
+  totalsReady: boolean
 }
 
-function ExpandedDeliveryFields({ item, status, onReport, reporting }: ExpandedDeliveryFieldsProps) {
-  const [valor, setValor] = useState('')
+function ExpandedDeliveryFields({
+  item,
+  status,
+  onReport,
+  reporting,
+  total,
+  totalsReady,
+}: ExpandedDeliveryFieldsProps) {
+  // El valor a reportar es el total_price del radicado (precargado, no editable).
+  const hasTotal = total != null
+  const valorReporte = hasTotal ? String(total) : ''
 
   const handleReport = async () => {
-    const trimmed = valor.trim()
-    if (!trimmed) return
-    const ok = await onReport(item, trimmed)
-    if (ok) setValor('')
+    if (!valorReporte) return
+    await onReport(item, valorReporte)
   }
 
   const fields: Array<{ label: string; value: string | number | null }> = [
@@ -277,7 +293,7 @@ function ExpandedDeliveryFields({ item, status, onReport, reporting }: ExpandedD
           >
             <dt className="font-mono text-slate-500">{f.label}</dt>
             <dd
-              className="m-0 truncate font-mono font-semibold text-slate-900"
+              className="m-0 truncate font-mono font-semibold text-[#2d3436]"
               title={String(f.value ?? '')}
             >
               {f.value ?? '—'}
@@ -295,16 +311,16 @@ function ExpandedDeliveryFields({ item, status, onReport, reporting }: ExpandedD
             <input
               type="text"
               inputMode="numeric"
-              value={formatThousands(valor)}
-              onChange={(e) => setValor(e.target.value.replace(/\D/g, ''))}
-              disabled={reporting}
-              placeholder="valor"
-              className="h-9 w-40 rounded-md border border-slate-300 bg-white px-3 font-mono text-sm font-semibold text-slate-900 focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25 disabled:cursor-not-allowed disabled:bg-slate-100"
+              readOnly
+              value={hasTotal ? formatThousands(valorReporte) : ''}
+              placeholder={totalsReady ? '—' : 'cargando…'}
+              title="Valor total del radicado (no editable)"
+              className="h-9 w-40 rounded-md border border-slate-300 bg-slate-50 px-3 font-mono text-sm font-semibold text-[#2d3436] focus:outline-none"
             />
             <button
               type="button"
               onClick={handleReport}
-              disabled={reporting || !valor.trim()}
+              disabled={reporting || !hasTotal}
               className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3.5 text-[13px] font-bold text-white shadow-sm transition-colors hover:bg-primary/90 focus:outline-none focus:ring-[3px] focus:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {reporting ? (

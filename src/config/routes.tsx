@@ -29,15 +29,23 @@ import ProvidersListPage from '@/modules/providers/screens/providers-list'
 import ProviderDetailPage from '@/modules/providers/screens/provider-detail'
 import ServiceUsersListPage from '@/modules/users/screens/service-users-list'
 import ServiceUserCreatePage from '@/modules/users/screens/service-user-create'
-import ServiceUserEditPage from '@/modules/users/screens/service-user-edit'
+import ServiceUserDetailPage from '@/modules/users/screens/service-user-detail'
 import CompanyPage from '@/modules/company/screens/company'
 import StopMaxListPage from '@/modules/stop-max/screens/stop-max-list'
 import StopMaxCreatePage from '@/modules/stop-max/screens/stop-max-create'
 import StopMaxEditPage from '@/modules/stop-max/screens/stop-max-edit'
 import MipresPage from '@/modules/mipres/screens/mipres-page'
-import TvMedListPage from '@/modules/tv-med/screens/tv-med-list'
-import TvMedCreatePage from '@/modules/tv-med/screens/tv-med-create'
-import TvMedEditPage from '@/modules/tv-med/screens/tv-med-edit'
+import TvDataHomePage from '@/modules/tv-data/screens/tv-data-home'
+import TvDataListPage from '@/modules/tv-data/screens/tv-data-list'
+import TvMedEventoListPage from '@/modules/tvmed-evento/screens/tvmed-evento-list'
+import TvInsEventoListPage from '@/modules/tvins-evento/screens/tvins-evento-list'
+import FilingMipresListPage from '@/modules/filing-mipres/screens/filing-mipres-list'
+import FilingMipresDetailPage from '@/modules/filing-mipres/screens/filing-mipres-detail'
+import EventoListPage from '@/modules/evento/screens/evento-list'
+import EventoDetailPage from '@/modules/evento/screens/evento-detail'
+import FilingEventListPage from '@/modules/filing-event/screens/filing-event-list'
+import FilingEventRegisterPage from '@/modules/filing-event/screens/filing-event-register'
+import FilingEventDetailPage from '@/modules/filing-event/screens/filing-event-detail'
 
 export const routes: RouteObject[] = [
   {
@@ -94,14 +102,22 @@ export const routes: RouteObject[] = [
           { path: '/dashboard/providers/:id', element: <ProviderDetailPage /> },
           { path: '/dashboard/usuarios', element: <ServiceUsersListPage /> },
           { path: '/dashboard/usuarios/nuevo', element: <ServiceUserCreatePage /> },
-          { path: '/dashboard/usuarios/:id/editar', element: <ServiceUserEditPage /> },
+          { path: '/dashboard/usuarios/:id', element: <ServiceUserDetailPage /> },
           { path: '/dashboard/stop-max', element: <StopMaxListPage /> },
           { path: '/dashboard/stop-max/new', element: <StopMaxCreatePage /> },
           { path: '/dashboard/stop-max/:id/edit', element: <StopMaxEditPage /> },
-          { path: '/dashboard/tv-med', element: <TvMedListPage /> },
-          { path: '/dashboard/tv-med/new', element: <TvMedCreatePage /> },
-          { path: '/dashboard/tv-med/:id/edit', element: <TvMedEditPage /> },
+          { path: '/dashboard/tv-data', element: <TvDataHomePage /> },
+          { path: '/dashboard/tv-data/tvmed_evento', element: <TvMedEventoListPage /> },
+          { path: '/dashboard/tv-data/tvins_evento', element: <TvInsEventoListPage /> },
+          { path: '/dashboard/tv-data/:table', element: <TvDataListPage /> },
+          { path: '/dashboard/filing-mipres', element: <FilingMipresListPage /> },
+          { path: '/dashboard/filing-mipres/:id', element: <FilingMipresDetailPage /> },
           { path: '/dashboard/mipres', element: <MipresPage /> },
+          { path: '/dashboard/evento', element: <EventoListPage /> },
+          { path: '/dashboard/evento/:id', element: <EventoDetailPage /> },
+          { path: '/dashboard/filing-event', element: <FilingEventListPage /> },
+          { path: '/dashboard/filing-event/registro', element: <FilingEventRegisterPage /> },
+          { path: '/dashboard/filing-event/:id', element: <FilingEventDetailPage /> },
           { path: '/dashboard/*', element: <ModuleNotReady /> },
         ],
       },

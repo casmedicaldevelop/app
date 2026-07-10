@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Building2, AlertCircle, Eye, EyeOff, RefreshCw } from 'lucide-react'
+import { Building2, AlertCircle, RefreshCw } from 'lucide-react'
 import { useCompany } from '../hooks/useCompany'
 import { useUpsertCompany } from '../hooks/useUpsertCompany'
 import { useUpdateMipres } from '../hooks/useUpdateMipres'
-import { useUpdateAi } from '../hooks/useUpdateAi'
 import { useRefreshMipresToken } from '../hooks/useRefreshMipresToken'
-import type { UpsertCompanyPayload, UpdateMipresPayload, UpdateAiPayload } from '../types/company.types'
+import type { UpsertCompanyPayload, UpdateMipresPayload } from '../types/company.types'
 
-type Tab = 'datos' | 'mipres' | 'ia'
+type Tab = 'datos' | 'mipres'
 
 interface CompanyForm {
   name: string
@@ -28,11 +27,6 @@ interface MipresForm {
   tokenCompany: string
 }
 
-interface AiForm {
-  aiApiKey: string
-  aiModel: string
-}
-
 function validateCompany(form: CompanyForm): CompanyErrors {
   const errors: CompanyErrors = {}
   if (!form.name.trim()) errors.name = 'El nombre es requerido'
@@ -49,7 +43,6 @@ export default function CompanyPage() {
   const { data: company, isLoading, isError } = useCompany()
   const upsert = useUpsertCompany()
   const updateMipres = useUpdateMipres()
-  const updateAi = useUpdateAi()
   const refreshToken = useRefreshMipresToken()
 
   const [companyForm, setCompanyForm] = useState<CompanyForm>(INITIAL_COMPANY)
@@ -57,8 +50,6 @@ export default function CompanyPage() {
   const [touched, setTouched] = useState<Partial<Record<keyof CompanyForm, boolean>>>({})
 
   const [mipresForm, setMipresForm] = useState<MipresForm>({ tokenCompany: '' })
-  const [aiForm, setAiForm] = useState<AiForm>({ aiApiKey: '', aiModel: 'gemini-3-flash-preview' })
-  const [showApiKey, setShowApiKey] = useState(false)
 
   const isNotConfigured = isError
 
@@ -73,10 +64,6 @@ export default function CompanyPage() {
       address: company.address ?? '',
     })
     setMipresForm({ tokenCompany: company.tokenCompany ?? '' })
-    setAiForm({
-      aiApiKey: '',
-      aiModel: company.aiModel ?? 'gemini-3-flash-preview',
-    })
   }, [company])
 
   function handleCompanyChange(field: keyof CompanyForm, value: string) {
@@ -117,16 +104,6 @@ export default function CompanyPage() {
       tokenCompany: mipresForm.tokenCompany.trim() || undefined,
     }
     updateMipres.mutate(payload)
-  }
-
-  function handleAiSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!aiForm.aiModel.trim()) return
-    const payload: UpdateAiPayload = {
-      aiApiKey: aiForm.aiApiKey.trim() || undefined,
-      aiModel: aiForm.aiModel.trim(),
-    }
-    updateAi.mutate(payload)
   }
 
   if (isLoading) {
@@ -178,7 +155,6 @@ export default function CompanyPage() {
             {([
               { key: 'datos', label: 'Datos de la empresa' },
               { key: 'mipres', label: 'MiPres' },
-              { key: 'ia', label: 'IA' },
             ] as { key: Tab; label: string }[]).map(({ key, label }) => (
               <button
                 key={key}
@@ -350,111 +326,6 @@ export default function CompanyPage() {
               </div>
             </div>
           </form>
-        )}
-
-        {/* Tab: Inteligencia Artificial */}
-        {tab === 'ia' && (
-          <>
-            {isNotConfigured ? (
-              <div className="flex flex-col items-center justify-center py-14 gap-3 text-center px-6">
-                <AlertCircle className="h-8 w-8 text-muted-foreground/50" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">Empresa no configurada</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Configure primero los datos de la empresa para acceder a esta sección
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setTab('datos')}
-                  className="h-8 px-4 rounded-lg bg-primary text-primary-foreground text-xs font-semibold
-                             cursor-pointer hover:bg-primary/90 transition-all duration-200 shadow-sm"
-                >
-                  Configurar empresa
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleAiSubmit} noValidate>
-                <div className="divide-y divide-border">
-                  <div className="px-6 py-5 space-y-4">
-                    <div>
-                      <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Proveedor de IA
-                      </h2>
-                      <p className="mt-1 text-xs text-muted-foreground leading-snug">
-                        Credenciales para el servicio de inteligencia artificial usado en el reconocimiento de nombres de medicamentos.
-                      </p>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label htmlFor="ai-api-key" className="block text-xs font-medium text-foreground mb-1">
-                          API Key
-                        </label>
-                        <div className="relative">
-                          <input
-                            id="ai-api-key"
-                            type={showApiKey ? 'text' : 'password'}
-                            autoComplete="off"
-                            value={aiForm.aiApiKey}
-                            onChange={(e) => setAiForm((f) => ({ ...f, aiApiKey: e.target.value }))}
-                            placeholder={company?.aiApiKey ? '••••••••••••••••••••' : 'AIza...'}
-                            className="h-9 w-full rounded-lg border border-input pl-3 pr-10 text-sm bg-background font-mono
-                                       focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowApiKey((v) => !v)}
-                            className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                            aria-label={showApiKey ? 'Ocultar clave' : 'Mostrar clave'}
-                          >
-                            {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        </div>
-                        {company?.aiApiKey && (
-                          <p className="mt-1 text-xs text-emerald-600 font-medium">
-                            ✓ Clave configurada — deje en blanco para mantenerla o ingrese una nueva para reemplazarla
-                          </p>
-                        )}
-                        {!company?.aiApiKey && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Obtenga su API Key en Google AI Studio
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label htmlFor="ai-model" className="block text-xs font-medium text-foreground mb-1">
-                          Modelo
-                        </label>
-                        <input
-                          id="ai-model"
-                          type="text"
-                          readOnly
-                          value={aiForm.aiModel}
-                          className="h-9 w-full rounded-lg border border-input px-3 text-sm bg-muted/40
-                                     text-muted-foreground cursor-not-allowed font-mono"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-end px-6 py-4 bg-muted/10">
-                    <button
-                      type="submit"
-                      disabled={updateAi.isPending || !aiForm.aiModel.trim()}
-                      className="h-8 px-5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold
-                                 cursor-pointer hover:bg-primary/90 disabled:opacity-50 active:scale-[0.98]
-                                 transition-all duration-200 shadow-sm"
-                    >
-                      {updateAi.isPending ? 'Guardando...' : 'Guardar cambios'}
-                    </button>
-                  </div>
-                </div>
-              </form>
-            )}
-          </>
         )}
 
         {/* Tab: MiPres */}

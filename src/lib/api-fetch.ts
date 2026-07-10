@@ -162,3 +162,33 @@ export async function apiFetch<T = unknown>(
   emitMeta(res.status, res.statusText, readHeaders(res.headers), body)
   return body as T
 }
+
+/** Descarga binaria autenticada (Bearer). Devuelve el Blob de la respuesta. */
+export async function apiFetchBlob(path: string): Promise<Blob> {
+  const { accessToken } = useAuthStore.getState()
+  const res = await fetch(`${base}${path}`, {
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    credentials: 'include',
+  })
+  if (!res.ok) {
+    throw await res.json().catch(() => ({ message: res.statusText }))
+  }
+  return res.blob()
+}
+
+/** POST multipart autenticado (Bearer). El navegador pone el boundary; no fijar Content-Type. */
+export async function apiFetchUpload<T = unknown>(path: string, form: FormData): Promise<T> {
+  const { accessToken } = useAuthStore.getState()
+  const res = await fetch(`${base}${path}`, {
+    method: 'POST',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    credentials: 'include',
+    body: form,
+  })
+  if (!res.ok) {
+    throw await res.json().catch(() => ({ message: res.statusText }))
+  }
+  const len = res.headers.get('content-length')
+  if (res.status === 204 || len === '0') return undefined as T
+  return (await res.json()) as T
+}

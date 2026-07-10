@@ -1,7 +1,11 @@
 import { apiFetch } from '../../../../../lib/api-fetch'
 import { recordRequest } from '../../../../../lib/request-log'
 import { toArray } from '../../../services/array.helper'
-import type { FacturacionInput, ReporteEntregaItem } from '../types/delivery-reports.types'
+import type {
+  FacturacionInput,
+  FacturacionPrefill,
+  ReporteEntregaItem,
+} from '../types/delivery-reports.types'
 
 export const DELIVERY_REPORTS_DEBUG_KEYS = {
   load: 'mipres:load-delivery-reports',
@@ -32,6 +36,13 @@ export const deliveryReportsService = {
       `/mipres/facturacion`,
       { method: 'PUT', body: JSON.stringify(input) },
       { onMeta: (meta) => recordRequest(DELIVERY_REPORTS_DEBUG_KEYS.facturacion, meta) },
+    )
+  },
+
+  /** routing_id + unit_price por IDReporteEntrega para precargar la facturación. */
+  async facturacionPrefill(prescriptionNumber: string): Promise<FacturacionPrefill[]> {
+    return apiFetch<FacturacionPrefill[]>(
+      `/filing-mipres/facturacion-prefill?prescriptionNumber=${encodeURIComponent(prescriptionNumber)}`,
     )
   },
 }

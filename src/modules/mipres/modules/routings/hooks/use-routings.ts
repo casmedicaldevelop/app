@@ -7,6 +7,14 @@ import { extractMessage } from '../../../utils/error.helpers'
 import type { RoutingItem } from '../types/routings.types'
 import type { CreateSchedulePayload } from '../../schedules/types/schedules.types'
 import type { Company } from '../../../../company/types/company.types'
+import type { TvData } from '../../../../tv-data/types/tv-data.types'
+import type { Doctor } from '../../../../doctors/types/doctor.types'
+
+export interface BindData {
+  codSerTec: string
+  product: TvData
+  doctor: Doctor
+}
 
 /**
  * SISPRO write/read eventual-consistency window. After PUT /api/Programacion
@@ -37,7 +45,7 @@ export function useRoutings({ prescriptionNumber, company, onBindSuccess }: UseR
   const queryClient = useQueryClient()
 
   const bindRouting = useCallback(
-    async (item: RoutingItem, codSerTecOverride?: string) => {
+    async (item: RoutingItem, bindData: BindData) => {
       if (!company?.nit || !company?.codeProvider) {
         toast.error('Configurá NIT y código del prestador en la empresa antes de amarrar')
         return
@@ -51,7 +59,7 @@ export function useRoutings({ prescriptionNumber, company, onBindSuccess }: UseR
       })
       let succeeded = false
       try {
-        const codSerTec = (codSerTecOverride ?? item.CodSerTecAEntregar).trim()
+        const codSerTec = bindData.codSerTec.trim()
         const payload: CreateSchedulePayload = {
           miPresDireccionId: String(item.ID),
           fecMaxEnt: item.FecMaxEnt,
@@ -60,9 +68,15 @@ export function useRoutings({ prescriptionNumber, company, onBindSuccess }: UseR
           codSedeProv: company.codeProvider,
           codSerTecAEntregar: codSerTec,
           cantTotAEntregar: item.CantTotAEntregar,
+          doctorDocument: bindData.doctor.id,
+          userDocument: item.NoIDPaciente,
+          prescriptionNumber: item.NoPrescripcion,
+          medicationName: bindData.product.name,
+          inventoryCode: bindData.product.inventoryCode,
+          unitPrice: bindData.product.price,
         }
         await schedulesService.create(payload)
-        toast.success('Programación registrada')
+        toast.success('Programación registrada y radicado creado')
         succeeded = true
         // Espera de consistencia SISPRO antes de refetch + redirección.
         await sleep(SISPRO_CONSISTENCY_DELAY_MS)

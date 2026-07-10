@@ -35,4 +35,11 @@ export interface CreateDeliveryPayload {
 export interface CreateDeliveryReportPayload {
   miPresEntregaId: string
   valorEntregado: string
+  /** IDEntrega — para que el backend persista delivery_report_id en el radicado. */
+  deliveryId: string
+}
+
+export interface DeliveryTotal {
+  deliveryId: string
+  totalPrice: number
 }

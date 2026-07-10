@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { schedulesService } from '../services/schedules.service'
@@ -34,6 +34,18 @@ export function useSchedules({ prescriptionNumber }: UseSchedulesArgs) {
     enabled: !!prescriptionNumber,
     staleTime: 0,
   })
+
+  // schedule_id que ya tienen entregas locales → no se pueden anular.
+  const deliveredQuery = useQuery({
+    queryKey: ['mipres-delivered-schedule-ids', prescriptionNumber],
+    queryFn: () => schedulesService.deliveredScheduleIds(prescriptionNumber!),
+    enabled: !!prescriptionNumber,
+    staleTime: 0,
+  })
+  const deliveredScheduleIds = useMemo(
+    () => new Set(deliveredQuery.data ?? []),
+    [deliveredQuery.data],
+  )
 
   const cancelSchedule = useCallback(
     async (item: ScheduleItem) => {
@@ -75,5 +87,7 @@ export function useSchedules({ prescriptionNumber }: UseSchedulesArgs) {
     cancelSchedule,
     cancelingIds,
     refetch: query.refetch,
+    deliveredScheduleIds,
+    deliveriesReady: deliveredQuery.isSuccess,
   }
 }

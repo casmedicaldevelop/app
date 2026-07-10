@@ -4,7 +4,7 @@ import {
   Boxes, FileText, Truck, Hospital, Pill, Activity, ClipboardList,
   DollarSign, TrendingUp, MapPin, Phone, Mail, Building2, Stethoscope,
   FlaskConical, Heart, Shield, Star, Bell, Calendar, Clock, Search,
-  ChevronRight, ArrowRight, type LucideIcon,
+  ChevronRight, ArrowRight, KeyRound, type LucideIcon,
 } from 'lucide-react'
 
 const ICONS: Record<string, LucideIcon> = {
@@ -12,7 +12,7 @@ const ICONS: Record<string, LucideIcon> = {
   Boxes, FileText, Truck, Hospital, Pill, Activity, ClipboardList,
   DollarSign, TrendingUp, MapPin, Phone, Mail, Building2, Stethoscope,
   FlaskConical, Heart, Shield, Star, Bell, Calendar, Clock, Search,
-  ChevronRight, ArrowRight,
+  ChevronRight, ArrowRight, KeyRound,
 }
 
 interface IconPickerProps {

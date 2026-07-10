@@ -1,15 +1,4 @@
-import {
-  Boxes,
-  ClipboardList,
-  Clock,
-  FileText,
-  Layers,
-  Link2,
-  List,
-  MoreHorizontal,
-  Package,
-  Receipt,
-} from 'lucide-react'
+import { FileText, Link2, List, Package, Receipt } from 'lucide-react'
 import type { ComponentType } from 'react'
 import type { MipresTool } from '../types/shared.types'
 
@@ -25,27 +14,12 @@ interface ToolDef {
   icon: ComponentType<{ className?: string }>
 }
 
-interface PlaceholderDef {
-  id: string
-  label: string
-  icon: ComponentType<{ className?: string }>
-  caption?: string
-}
-
 const PRIMARY_TOOLS: ToolDef[] = [
   { id: 'routings', label: 'Direccionamientos', icon: List },
   { id: 'schedules', label: 'Programaciones', icon: Link2 },
   { id: 'entregas', label: 'Entregas', icon: Package },
   { id: 'delivery-reports', label: 'R. Entrega', icon: FileText },
   { id: 'facturacion', label: 'Facturación', icon: Receipt },
-]
-
-const FUTURE_TOOLS: PlaceholderDef[] = [
-  { id: 'despacho', label: 'Despacho', icon: Boxes },
-  { id: 'despacho-fases', label: 'Despacho por fases', icon: Layers },
-  { id: 'reportes', label: 'Reportes', icon: ClipboardList },
-  { id: 'turnos', label: 'Turnos', icon: Clock },
-  { id: 'mas', label: '… +33', icon: MoreHorizontal, caption: 'Más herramientas según las vayas pidiendo' },
 ]
 
 export default function ToolDock({ enabled, activeTool, onToolChange }: ToolDockProps) {
@@ -79,13 +53,6 @@ export default function ToolDock({ enabled, activeTool, onToolChange }: ToolDock
             isActive={activeTool === tool.id && enabled}
             onClick={() => onToolChange(tool.id)}
           />
-        ))}
-
-        <div className="mt-3 px-2.5 pb-1 pt-1.5 text-[10.5px] font-bold uppercase tracking-widest text-slate-400">
-          Próximas
-        </div>
-        {FUTURE_TOOLS.map((tool) => (
-          <PlaceholderButton key={tool.id} tool={tool} />
         ))}
       </div>
     </aside>
@@ -144,26 +111,6 @@ function MobileToolButton({ tool, disabled, isActive, onClick }: ToolButtonProps
     >
       <Icon className="h-3.5 w-3.5" />
       {tool.label}
-    </button>
-  )
-}
-
-function PlaceholderButton({ tool }: { tool: PlaceholderDef }) {
-  const Icon = tool.icon
-  return (
-    <button
-      type="button"
-      disabled
-      title={tool.caption ?? 'Esta herramienta llega cuando la pidas en una próxima slice'}
-      className="flex min-h-[40px] cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13.5px] font-medium text-slate-700 opacity-55"
-    >
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600">
-        <Icon className="h-3.5 w-3.5" />
-      </span>
-      <span className="truncate">{tool.label}</span>
-      <span className="ml-auto rounded bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-bold tracking-wider text-slate-400">
-        +
-      </span>
     </button>
   )
 }

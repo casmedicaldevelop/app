@@ -43,7 +43,7 @@ export default function FacturacionPanel({
     <div className="flex flex-col gap-3">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold text-slate-900">Facturaciones</h2>
+          <h2 className="text-base font-bold text-[#2d3436]">Facturaciones</h2>
           <p className="mt-0.5 text-[12px] text-slate-500">
             Facturaciones registradas en SISPRO para esta prescripción.
           </p>
@@ -61,7 +61,7 @@ export default function FacturacionPanel({
       </header>
 
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[12.5px] font-semibold text-red-700">
+        <div className="rounded-md border border-[#ee5253]/30 bg-red-50 px-3 py-2 text-[12.5px] font-semibold text-[#ee5253]">
           {error}
         </div>
       )}
@@ -228,7 +228,7 @@ function CopyableId({ value }: { value: number }) {
       onClick={onClick}
       aria-label={`Copiar ID ${value} al portapapeles`}
       title="Clic para copiar"
-      className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-1 -mx-1 font-mono text-[12.5px] font-bold text-slate-900 transition-colors hover:bg-primary/5 hover:text-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25"
+      className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-1 -mx-1 font-mono text-[12.5px] font-bold text-[#2d3436] transition-colors hover:bg-primary/5 hover:text-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25"
     >
       <span>{value}</span>
       <Copy className={`h-3.5 w-3.5 transition-colors ${copied ? 'text-emerald-600' : 'text-slate-400'}`} />
@@ -271,7 +271,7 @@ function ExpandedFacturacionFields({ item }: { item: FacturacionItem }) {
         >
           <dt className="font-mono text-slate-500">{f.label}</dt>
           <dd
-            className="m-0 truncate font-mono font-semibold text-slate-900"
+            className="m-0 truncate font-mono font-semibold text-[#2d3436]"
             title={String(f.value ?? '')}
           >
             {f.value ?? '—'}

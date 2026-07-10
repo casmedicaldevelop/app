@@ -4,6 +4,7 @@ import { toArray } from '../../../services/array.helper'
 import type {
   CreateDeliveryPayload,
   CreateDeliveryReportPayload,
+  DeliveryTotal,
   EntregaItem,
 } from '../types/deliveries.types'
 
@@ -45,6 +46,13 @@ export const deliveriesService = {
       '/mipres/delivery-report',
       { method: 'POST', body: JSON.stringify(payload) },
       { onMeta: (meta) => recordRequest(DELIVERIES_DEBUG_KEYS.createReport, meta) },
+    )
+  },
+
+  /** total_price por IDEntrega (delivery_id) para precargar el valor del reporte. */
+  async deliveryTotals(prescriptionNumber: string): Promise<DeliveryTotal[]> {
+    return apiFetch<DeliveryTotal[]>(
+      `/filing-mipres/delivery-totals?prescriptionNumber=${encodeURIComponent(prescriptionNumber)}`,
     )
   },
 }

@@ -286,8 +286,8 @@ export default function StaffDetailPage() {
                              hover:border-ring/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20
                              disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <option value="USER">Auxiliar</option>
-                  <option value="ADMIN">Administrador</option>
+                  <option value="AUXILIAR">Auxiliar</option>
+                  <option value="ADMINISTRADOR">Administrador</option>
                 </select>
               </div>
 

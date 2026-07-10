@@ -23,7 +23,7 @@ interface CreateStaffForm {
   username: string
   identificationNumber: string
   phone: string
-  role: 'ADMIN' | 'USER'
+  role: 'ADMINISTRADOR' | 'AUXILIAR'
 }
 
 function TempPasswordView({ result, onClose }: { result: CreateStaffResponse; onClose: () => void }) {
@@ -98,7 +98,7 @@ export function CreateStaffModal({ open, onClose }: CreateStaffModalProps) {
   const [createdStaff, setCreatedStaff] = useState<CreateStaffResponse | null>(null)
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateStaffForm>({
-    defaultValues: { role: 'USER' },
+    defaultValues: { role: 'AUXILIAR' },
   })
 
   const handleClose = () => {
@@ -258,8 +258,8 @@ export function CreateStaffModal({ open, onClose }: CreateStaffModalProps) {
                              hover:border-ring/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20
                              disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <option value="USER">Auxiliar</option>
-                  <option value="ADMIN">Administrador</option>
+                  <option value="AUXILIAR">Auxiliar</option>
+                  <option value="ADMINISTRADOR">Administrador</option>
                 </select>
               </div>
 

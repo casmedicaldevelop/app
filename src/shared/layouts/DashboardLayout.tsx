@@ -4,11 +4,13 @@ import { LogOut, Menu, X } from 'lucide-react'
 import { useAuthStore } from '../../modules/auth/auth.store'
 import { useLogout } from '../../modules/auth/hooks/useLogout'
 import { renderIcon } from '@/modules/system-modules/components/IconPicker'
+import { useActiveEventContract } from '@/modules/evento/hooks/useEventContract'
 
 interface NavItem {
   path: string
   label: string
   icon: string
+  disabled?: boolean
 }
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
@@ -34,7 +36,19 @@ function useCurrentPage(items: NavItem[]) {
 }
 
 function SidebarLink({ item, onNavigate }: { item: NavItem; onNavigate: () => void }) {
-  const { icon, path, label } = item
+  const { icon, path, label, disabled } = item
+  if (disabled) {
+    return (
+      <div
+        aria-disabled="true"
+        title="No hay un contrato en curso"
+        className="group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/30 cursor-not-allowed"
+      >
+        {renderIcon(icon, 'h-4 w-4 shrink-0')}
+        <span className="flex-1">{label}</span>
+      </div>
+    )
+  }
   return (
     <NavLink
       to={path}
@@ -64,9 +78,11 @@ export default function DashboardLayout() {
   const { user } = useAuthStore()
   const handleLogout = useLogout()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const isAdmin = user?.role === 'ADMIN'
-  const { pathname } = useLocation()
-  const isFullBleedRoute = pathname.startsWith('/dashboard/mipres')
+  const isAdmin = user?.role === 'ADMINISTRADOR'
+
+  // Radicación de evento solo se habilita si hay un contrato en curso.
+  const { data: activeContract } = useActiveEventContract()
+  const hasActiveContract = !!activeContract
 
   const adminPaths = new Set(ADMIN_NAV_ITEMS.map((i) => i.path))
   const userModuleItems = (user?.modules ?? [])
@@ -75,6 +91,7 @@ export default function DashboardLayout() {
       path: `/dashboard/${encodeURIComponent(m.name)}`,
       label: m.label,
       icon: m.icon,
+      disabled: m.name === 'filing-event' && !hasActiveContract,
     }))
 
   const currentPage = useCurrentPage([...userModuleItems, ...ADMIN_NAV_ITEMS])
@@ -194,8 +211,9 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        {/* Main content */}
-        <main className={`flex-1 overflow-auto ${isFullBleedRoute ? '' : 'p-4 sm:p-6 lg:p-8'}`}>
+        {/* Main content — full-bleed siempre: el main NUNCA pone padding.
+            El espacio interno, si una pantalla lo necesita, lo maneja su propio componente. */}
+        <main className="flex-1 overflow-auto">
           <Outlet />
         </main>
       </div>

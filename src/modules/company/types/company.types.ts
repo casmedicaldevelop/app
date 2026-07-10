@@ -9,8 +9,6 @@ export interface Company {
   codeProvider: string | null
   tokenCompany: string | null
   tokenAuth: string | null
-  aiApiKey: string | null
-  aiModel: string | null
   createdAt: string
   updatedAt: string
 }
@@ -26,9 +24,4 @@ export interface UpsertCompanyPayload {
 
 export interface UpdateMipresPayload {
   tokenCompany?: string
-}
-
-export interface UpdateAiPayload {
-  aiApiKey?: string
-  aiModel: string
 }

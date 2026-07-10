@@ -43,11 +43,10 @@ export default function NewDeliveryModal({
   const [direccionamiento, setDireccionamiento] = useState<RoutingItem | null>(null)
   const [lookupError, setLookupError] = useState<string | null>(null)
 
-  // Únicos dos campos editables por el usuario: fecha y cantidad. El resto se
-  // deriva del direccionamiento o usa defaults internos (lote='0', EntTotal=1,
-  // CausaNoEntrega=0, paciente del direccionamiento).
+  // Único campo editable por el usuario: la fecha. La cantidad entregada es
+  // siempre la cantidad a entregar del direccionamiento; el resto usa defaults
+  // internos (lote='0', EntTotal=1, CausaNoEntrega=0, paciente del direccionamiento).
   const [fecEntrega, setFecEntrega] = useState<string>(todayIso())
-  const [cantEntregada, setCantEntregada] = useState<string>('')
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -72,12 +71,6 @@ export default function NewDeliveryModal({
     return null
   }, [patient])
 
-  const maxQty = useMemo(() => {
-    if (!direccionamiento) return null
-    const n = parseInt(direccionamiento.CantTotAEntregar, 10)
-    return Number.isFinite(n) && n > 0 ? n : null
-  }, [direccionamiento])
-
   const maxFechaEntrega = useMemo(
     () => minIsoDate(todayIso(), direccionamiento?.FecMaxEnt),
     [direccionamiento],
@@ -99,6 +92,8 @@ export default function NewDeliveryModal({
     }
     setLookupError(null)
     setDireccionamiento(found)
+    // Fecha por defecto: hoy, salvo que hoy supere la fecha máxima → entonces la máxima.
+    setFecEntrega(minIsoDate(todayIso(), found.FecMaxEnt))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -118,15 +113,6 @@ export default function NewDeliveryModal({
       )
       return
     }
-    const cantNum = parseInt(cantEntregada.trim(), 10)
-    if (!Number.isFinite(cantNum) || cantNum <= 0) {
-      setSubmitError('Ingresá una cantidad entregada válida (mayor a 0).')
-      return
-    }
-    if (maxQty != null && cantNum > maxQty) {
-      setSubmitError(`La cantidad no puede superar la cantidad a entregar (${maxQty}).`)
-      return
-    }
 
     // Datos no editables → del direccionamiento + defaults internos.
     const tipoIdRecibe = patientHint?.tipo ?? direccionamiento.TipoIDPaciente
@@ -135,7 +121,7 @@ export default function NewDeliveryModal({
     const payload: CreateDeliveryPayload = {
       miPresDireccionId: String(direccionamiento.ID),
       codSerTecEntregado: direccionamiento.CodSerTecAEntregar,
-      cantTotEntregada: String(cantNum),
+      cantTotEntregada: direccionamiento.CantTotAEntregar,
       entTotal: 1,
       causaNoEntrega: 0,
       fecEntrega,
@@ -149,7 +135,7 @@ export default function NewDeliveryModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[#2d3436]/60 p-0 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="new-delivery-title"
@@ -166,7 +152,7 @@ export default function NewDeliveryModal({
               <Package className="h-5 w-5" />
             </div>
             <div>
-              <h2 id="new-delivery-title" className="text-base font-bold text-slate-900">
+              <h2 id="new-delivery-title" className="text-base font-bold text-[#2d3436]">
                 Nueva entrega
               </h2>
               <p className="mt-0.5 text-xs text-slate-500">
@@ -179,7 +165,7 @@ export default function NewDeliveryModal({
             onClick={onClose}
             disabled={loading}
             aria-label="Cerrar"
-            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900 focus:outline-none focus:ring-[3px] focus:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-200 hover:text-[#2d3436] focus:outline-none focus:ring-[3px] focus:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <X className="h-4 w-4" />
           </button>
@@ -200,7 +186,7 @@ export default function NewDeliveryModal({
                   onChange={(e) => setIdInput(e.target.value)}
                   placeholder="ej. 847312"
                   disabled={loading}
-                  className="h-10 flex-1 rounded-md border-2 border-primary bg-white px-3 font-mono text-sm font-bold text-slate-900 focus:outline-none focus:ring-[3px] focus:ring-primary/25 disabled:cursor-not-allowed disabled:bg-slate-100"
+                  className="h-10 flex-1 rounded-md border-2 border-primary bg-white px-3 font-mono text-sm font-bold text-[#2d3436] focus:outline-none focus:ring-[3px] focus:ring-primary/25 disabled:cursor-not-allowed disabled:bg-slate-100"
                 />
                 <button
                   type="button"
@@ -232,7 +218,7 @@ export default function NewDeliveryModal({
               <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[12px] sm:grid-cols-4">
                 <div>
                   <dt className="text-[10px] uppercase tracking-wider text-slate-500">Producto</dt>
-                  <dd className="font-mono font-bold text-slate-900">
+                  <dd className="font-mono font-bold text-[#2d3436]">
                     {direccionamiento.CodSerTecAEntregar}
                   </dd>
                 </div>
@@ -240,7 +226,7 @@ export default function NewDeliveryModal({
                   <dt className="text-[10px] uppercase tracking-wider text-slate-500">
                     Cant. a entregar
                   </dt>
-                  <dd className="font-mono font-bold text-slate-900">
+                  <dd className="font-mono font-bold text-[#2d3436]">
                     {direccionamiento.CantTotAEntregar}
                   </dd>
                 </div>
@@ -248,13 +234,13 @@ export default function NewDeliveryModal({
                   <dt className="text-[10px] uppercase tracking-wider text-slate-500">
                     Fec. máx. entrega
                   </dt>
-                  <dd className="font-mono font-bold text-slate-900">
+                  <dd className="font-mono font-bold text-[#2d3436]">
                     {direccionamiento.FecMaxEnt}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-[10px] uppercase tracking-wider text-slate-500">Paciente</dt>
-                  <dd className="font-mono font-bold text-slate-900">
+                  <dd className="font-mono font-bold text-[#2d3436]">
                     {direccionamiento.TipoIDPaciente} {direccionamiento.NoIDPaciente}
                   </dd>
                 </div>
@@ -262,13 +248,13 @@ export default function NewDeliveryModal({
             </div>
           )}
 
-          {/* Form fields: solo los 2 que el usuario manipula */}
+          {/* Form fields: solo la fecha (la cantidad es siempre la cantidad a entregar) */}
           {direccionamiento && (
             <>
               <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Datos de la entrega
               </p>
-              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3.5 sm:max-w-xs">
                 <label className="flex flex-col gap-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
                     Fecha de entrega <span className="text-rose-500">*</span>
@@ -279,29 +265,10 @@ export default function NewDeliveryModal({
                     max={maxFechaEntrega || undefined}
                     onChange={(e) => setFecEntrega(e.target.value)}
                     disabled={loading}
-                    className="h-9 rounded-md border border-slate-300 bg-white px-3 font-mono text-sm font-semibold text-slate-900 focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25 disabled:cursor-not-allowed disabled:bg-slate-100"
+                    className="h-9 rounded-md border border-slate-300 bg-white px-3 font-mono text-sm font-semibold text-[#2d3436] focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25 disabled:cursor-not-allowed disabled:bg-slate-100"
                   />
                   <span className="text-[10.5px] text-slate-500">
                     Máx. {direccionamiento.FecMaxEnt} (no puede superar la fec. máx. de entrega).
-                  </span>
-                </label>
-
-                <label className="flex flex-col gap-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                    Cant. entregada <span className="text-rose-500">*</span>
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={maxQty ?? undefined}
-                    value={cantEntregada}
-                    onChange={(e) => setCantEntregada(e.target.value)}
-                    placeholder={`máx. ${direccionamiento.CantTotAEntregar}`}
-                    disabled={loading}
-                    className="h-9 rounded-md border border-slate-300 bg-white px-3 font-mono text-sm font-semibold text-slate-900 focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/25 disabled:cursor-not-allowed disabled:bg-slate-100"
-                  />
-                  <span className="text-[10.5px] text-slate-500">
-                    Máx. {direccionamiento.CantTotAEntregar} unidades.
                   </span>
                 </label>
               </div>

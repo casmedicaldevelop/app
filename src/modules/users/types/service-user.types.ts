@@ -1,7 +1,25 @@
-export type HealthcareRegime = 'CONTRIBUTORY' | 'SUBSIDIZED'
+export type HealthcareRegime = 'CONTRIBUTIVO' | 'SUBSIDIADO'
+export type DocumentType =
+  | 'CC'
+  | 'CD'
+  | 'CE'
+  | 'CN'
+  | 'DE'
+  | 'MS'
+  | 'NV'
+  | 'PA'
+  | 'PE'
+  | 'PT'
+  | 'RC'
+  | 'SC'
+  | 'SI'
+  | 'TI'
+export type Gender = 'MASCULINO' | 'FEMENINO'
 
 export interface ServiceUser {
   id: string
+  documentType: DocumentType | null
+  gender: Gender | null
   firstName: string
   secondName: string | null
   firstSurname: string
@@ -11,6 +29,7 @@ export interface ServiceUser {
   birthDate: string | null
   birthDateApproximate: boolean
   healthcareRegime: HealthcareRegime | null
+  department: string | null
   city: string | null
   neighborhood: string | null
   address: string | null
@@ -22,6 +41,8 @@ export interface ServiceUser {
 
 export interface CreateServiceUserPayload {
   id: string
+  documentType?: DocumentType
+  gender?: Gender
   firstName: string
   secondName?: string
   firstSurname: string
@@ -31,6 +52,7 @@ export interface CreateServiceUserPayload {
   birthDate?: string
   birthDateApproximate?: boolean
   healthcareRegime?: HealthcareRegime
+  department?: string
   city?: string
   neighborhood?: string
   address?: string
@@ -38,6 +60,8 @@ export interface CreateServiceUserPayload {
 }
 
 export interface UpdateServiceUserPayload {
+  documentType?: DocumentType
+  gender?: Gender | null
   firstName?: string
   secondName?: string | null
   firstSurname?: string
@@ -47,6 +71,7 @@ export interface UpdateServiceUserPayload {
   birthDate?: string | null
   birthDateApproximate?: boolean
   healthcareRegime?: HealthcareRegime | null
+  department?: string
   city?: string
   neighborhood?: string
   address?: string

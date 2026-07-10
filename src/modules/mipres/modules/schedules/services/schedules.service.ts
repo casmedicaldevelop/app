@@ -1,7 +1,11 @@
 import { apiFetch } from '../../../../../lib/api-fetch'
 import { recordRequest } from '../../../../../lib/request-log'
 import { toArray } from '../../../services/array.helper'
-import type { CreateSchedulePayload, ScheduleItem } from '../types/schedules.types'
+import type {
+  CreateSchedulePayload,
+  CreateScheduleResponse,
+  ScheduleItem,
+} from '../types/schedules.types'
 
 export const SCHEDULES_DEBUG_KEYS = {
   load: 'mipres:load-schedules',
@@ -19,8 +23,8 @@ export const schedulesService = {
     return toArray(raw)
   },
 
-  async create(payload: CreateSchedulePayload): Promise<unknown> {
-    return apiFetch(
+  async create(payload: CreateSchedulePayload): Promise<CreateScheduleResponse> {
+    return apiFetch<CreateScheduleResponse>(
       '/mipres/schedule',
       { method: 'POST', body: JSON.stringify(payload) },
       { onMeta: (meta) => recordRequest(SCHEDULES_DEBUG_KEYS.create, meta) },
@@ -32,6 +36,13 @@ export const schedulesService = {
       `/mipres/schedule/${scheduleId}/cancel`,
       { method: 'PUT' },
       { onMeta: (meta) => recordRequest(SCHEDULES_DEBUG_KEYS.cancel, meta) },
+    )
+  },
+
+  /** schedule_id (IdProgramacion como string) que ya tienen entregas locales. */
+  async deliveredScheduleIds(prescriptionNumber: string): Promise<string[]> {
+    return apiFetch<string[]>(
+      `/filing-mipres/delivered-schedule-ids?prescriptionNumber=${encodeURIComponent(prescriptionNumber)}`,
     )
   },
 }

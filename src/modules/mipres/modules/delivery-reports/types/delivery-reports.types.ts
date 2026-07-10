@@ -47,4 +47,17 @@ export interface FacturacionInput {
   ValorTotFacturado: string
   CuotaModer: string
   Copago: string
+  /** IDReporteEntrega — para que el backend persista billing_id + invoice_code. */
+  deliveryReportId: string
+}
+
+/**
+ * Precarga de facturación por IDReporteEntrega: routing_id (idDireccionamiento) y
+ * unit_price (valor unitario) del radicado. Ambos derivados de la tabla de radicación;
+ * por eso esos inputs ya no se piden en el formulario.
+ */
+export interface FacturacionPrefill {
+  deliveryReportId: string
+  routingId: string | null
+  unitPrice: number
 }

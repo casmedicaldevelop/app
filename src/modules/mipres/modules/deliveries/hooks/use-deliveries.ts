@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { deliveriesService } from '../services/deliveries.service'
@@ -7,6 +7,9 @@ import type { CreateDeliveryPayload, EntregaItem } from '../types/deliveries.typ
 
 export const DELIVERIES_QUERY_KEY = (prescriptionNumber: string | undefined) =>
   ['mipres-deliveries', prescriptionNumber] as const
+
+const DELIVERY_TOTALS_QUERY_KEY = (prescriptionNumber: string | undefined) =>
+  ['mipres-delivery-totals', prescriptionNumber] as const
 
 interface UseDeliveriesArgs {
   prescriptionNumber: string | undefined
@@ -35,6 +38,19 @@ export function useDeliveries({ prescriptionNumber }: UseDeliveriesArgs) {
     staleTime: 0,
   })
 
+  // total_price por IDEntrega → precarga (solo lectura) del valor a reportar.
+  const totalsQuery = useQuery({
+    queryKey: DELIVERY_TOTALS_QUERY_KEY(prescriptionNumber),
+    queryFn: () => deliveriesService.deliveryTotals(prescriptionNumber!),
+    enabled: !!prescriptionNumber,
+    staleTime: 0,
+  })
+  const deliveryTotals = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const t of totalsQuery.data ?? []) m.set(t.deliveryId, t.totalPrice)
+    return m
+  }, [totalsQuery.data])
+
   const registerDelivery = useCallback(
     async (payload: CreateDeliveryPayload): Promise<boolean> => {
       if (registering) return false
@@ -43,9 +59,15 @@ export function useDeliveries({ prescriptionNumber }: UseDeliveriesArgs) {
         await deliveriesService.create(payload)
         toast.success('Entrega registrada')
         try {
-          await queryClient.invalidateQueries({
-            queryKey: DELIVERIES_QUERY_KEY(prescriptionNumber),
-          })
+          await Promise.all([
+            queryClient.invalidateQueries({
+              queryKey: DELIVERIES_QUERY_KEY(prescriptionNumber),
+            }),
+            // La nueva entrega ya tiene delivery_id → su total debe aparecer en la precarga.
+            queryClient.invalidateQueries({
+              queryKey: DELIVERY_TOTALS_QUERY_KEY(prescriptionNumber),
+            }),
+          ])
         } catch (refetchErr) {
           console.error('[REGISTER DELIVERY] refetch failed', refetchErr)
         }
@@ -104,6 +126,7 @@ export function useDeliveries({ prescriptionNumber }: UseDeliveriesArgs) {
         await deliveriesService.createReport({
           miPresEntregaId: String(item.ID),
           valorEntregado,
+          deliveryId: String(item.IDEntrega),
         })
         toast.success('Reporte registrado')
         succeeded = true
@@ -140,5 +163,7 @@ export function useDeliveries({ prescriptionNumber }: UseDeliveriesArgs) {
     reportDelivery,
     reportingIds,
     refetch: query.refetch,
+    deliveryTotals,
+    totalsReady: totalsQuery.isSuccess,
   }
 }

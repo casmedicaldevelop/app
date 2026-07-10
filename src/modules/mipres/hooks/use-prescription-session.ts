@@ -50,6 +50,11 @@ export function usePrescriptionSession() {
     loadMutation.reset()
   }, [loadMutation])
 
+  // Recarga el workspace actual (re-pide los direccionamientos a SISPRO).
+  const reloadWorkspace = useCallback(() => {
+    if (workspace) loadMutation.mutate(workspace.prescriptionNumber)
+  }, [workspace, loadMutation])
+
   return {
     prescriptionInput,
     setPrescriptionInput,
@@ -59,6 +64,7 @@ export function usePrescriptionSession() {
     loading: loadMutation.isPending,
     loadPrescription,
     clearPrescription,
+    reloadWorkspace,
     activeTool,
     setActiveTool,
     companyConfigured: !!company?.nit && !!company?.codeProvider,

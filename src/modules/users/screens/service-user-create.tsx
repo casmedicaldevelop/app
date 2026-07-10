@@ -1,358 +1,270 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ChevronLeft, Check, X, Hash, CalendarDays } from 'lucide-react'
 import { useCreateServiceUser } from '../hooks/useCreateServiceUser'
-import type { CreateServiceUserPayload } from '../types/service-user.types'
+import type { CreateServiceUserPayload, DocumentType, Gender, HealthcareRegime } from '../types/service-user.types'
+import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../../mipres/utils/document-type'
+import { UV_CSS } from './user-view.css'
+
+type BirthMode = 'exact' | 'age'
 
 interface FormState {
+  documentType: '' | DocumentType
   id: string
+  gender: '' | Gender
   firstName: string
   secondName: string
   firstSurname: string
   secondSurname: string
   phone: string
   email: string
+  birthMode: BirthMode
   birthDate: string
+  age: string
+  healthcareRegime: '' | HealthcareRegime
   city: string
   neighborhood: string
   address: string
   description: string
 }
 
-interface FormErrors {
-  id?: string
-  firstName?: string
-  firstSurname?: string
-  phone?: string
-  email?: string
+const EMPTY: FormState = {
+  documentType: '', id: '', gender: '', firstName: '', secondName: '', firstSurname: '',
+  secondSurname: '', phone: '', email: '', birthMode: 'exact', birthDate: '', age: '',
+  healthcareRegime: '', city: '', neighborhood: '', address: '', description: '',
 }
 
-function validate(form: FormState): FormErrors {
-  const errors: FormErrors = {}
-  if (!form.id.trim()) errors.id = 'La cédula es requerida'
-  else if (!/^\d+$/.test(form.id.trim())) errors.id = 'La cédula solo debe contener dígitos'
-  if (!form.firstName.trim()) errors.firstName = 'El primer nombre es requerido'
-  if (!form.firstSurname.trim()) errors.firstSurname = 'El primer apellido es requerido'
-  if (!form.phone.trim()) errors.phone = 'El teléfono es requerido'
-  else if (!/^\d{10}$/.test(form.phone.trim())) errors.phone = 'El teléfono debe tener exactamente 10 dígitos'
-  if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.email = 'El correo electrónico no es válido'
-  return errors
+function nowYear() {
+  return new Date().getFullYear()
 }
 
-const INITIAL: FormState = {
-  id: '', firstName: '', secondName: '', firstSurname: '', secondSurname: '',
-  phone: '', email: '', birthDate: '', city: '', neighborhood: '', address: '', description: '',
+function validate(f: FormState): Record<string, string> {
+  const e: Record<string, string> = {}
+  if (!f.documentType) e.documentType = 'Requerido'
+  if (!f.id.trim()) e.id = 'Requerido'
+  else if (!/^\d+$/.test(f.id.trim())) e.id = 'Solo dígitos'
+  if (!f.gender) e.gender = 'Requerido'
+  if (!f.firstName.trim()) e.firstName = 'Requerido'
+  if (!f.secondName.trim()) e.secondName = 'Requerido'
+  if (!f.firstSurname.trim()) e.firstSurname = 'Requerido'
+  if (!f.secondSurname.trim()) e.secondSurname = 'Requerido'
+  if (!f.phone.trim()) e.phone = 'Requerido'
+  else if (!/^\d{10}$/.test(f.phone.trim())) e.phone = 'Debe tener 10 dígitos'
+  if (!f.email.trim()) e.email = 'Requerido'
+  else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim())) e.email = 'Email inválido'
+  if (!f.healthcareRegime) e.healthcareRegime = 'Requerido'
+  if (!f.city.trim()) e.city = 'Requerido'
+  if (!f.neighborhood.trim()) e.neighborhood = 'Requerido'
+  if (!f.address.trim()) e.address = 'Requerido'
+  if (f.birthMode === 'exact') {
+    if (!f.birthDate) e.birth = 'Requerido'
+  } else {
+    const a = parseInt(f.age, 10)
+    if (!f.age || Number.isNaN(a)) e.birth = 'Requerido'
+    else if (a < 1 || a > 120) e.birth = 'Edad inválida (1–120)'
+  }
+  return e
 }
 
 export default function ServiceUserCreatePage() {
   const navigate = useNavigate()
   const create = useCreateServiceUser()
-  const [form, setForm] = useState<FormState>(INITIAL)
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [touched, setTouched] = useState<Partial<Record<keyof FormState, boolean>>>({})
+  const [form, setForm] = useState<FormState>(EMPTY)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  function handleChange(field: keyof FormState, value: string) {
+  function set<K extends keyof FormState>(field: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [field]: value }))
-    if (touched[field]) {
-      const errs = validate({ ...form, [field]: value })
-      setErrors((e) => ({ ...e, [field]: errs[field as keyof FormErrors] }))
-    }
   }
 
-  function handleBlur(field: keyof FormState) {
-    setTouched((t) => ({ ...t, [field]: true }))
-    const errs = validate(form)
-    setErrors((e) => ({ ...e, [field]: errs[field as keyof FormErrors] }))
+  function toggleBirth() {
+    setForm((f) => {
+      if (f.birthMode === 'exact') {
+        let age = f.age
+        if (f.birthDate) {
+          const y = parseInt(f.birthDate.slice(0, 4), 10)
+          if (!Number.isNaN(y)) {
+            const d = nowYear() - y
+            if (d >= 1 && d <= 120) age = String(d)
+          }
+        }
+        return { ...f, birthMode: 'age', age }
+      }
+      let birthDate = f.birthDate
+      const a = parseInt(f.age, 10)
+      if (!Number.isNaN(a)) {
+        const ty = nowYear() - a
+        const ey = f.birthDate ? parseInt(f.birthDate.slice(0, 4), 10) : NaN
+        if (!f.birthDate || Number.isNaN(ey) || ey !== ty) {
+          birthDate = `${String(ty).padStart(4, '0')}-01-01`
+        }
+      }
+      return { ...f, birthMode: 'exact', birthDate }
+    })
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  function save() {
     const errs = validate(form)
     setErrors(errs)
-    setTouched({ id: true, firstName: true, firstSurname: true, phone: true, email: true })
     if (Object.keys(errs).length > 0) return
+
+    let birthDate = ''
+    let birthDateApproximate = false
+    if (form.birthMode === 'age') {
+      const a = parseInt(form.age, 10)
+      birthDate = `${String(nowYear() - a).padStart(4, '0')}-01-01`
+      birthDateApproximate = true
+    } else {
+      birthDate = form.birthDate
+      birthDateApproximate = false
+    }
 
     const payload: CreateServiceUserPayload = {
       id: form.id.trim(),
+      ...(form.documentType ? { documentType: form.documentType } : {}),
+      ...(form.gender ? { gender: form.gender } : {}),
       firstName: form.firstName.trim(),
-      ...(form.secondName.trim() ? { secondName: form.secondName.trim() } : {}),
+      secondName: form.secondName.trim(),
       firstSurname: form.firstSurname.trim(),
-      ...(form.secondSurname.trim() ? { secondSurname: form.secondSurname.trim() } : {}),
+      secondSurname: form.secondSurname.trim(),
       phone: form.phone.trim(),
-      ...(form.email ? { email: form.email.trim() } : {}),
-      ...(form.birthDate ? { birthDate: form.birthDate } : {}),
-      ...(form.city ? { city: form.city.trim() } : {}),
-      ...(form.neighborhood ? { neighborhood: form.neighborhood.trim() } : {}),
-      ...(form.address ? { address: form.address.trim() } : {}),
-      ...(form.description ? { description: form.description.trim() } : {}),
+      email: form.email.trim(),
+      birthDate,
+      birthDateApproximate,
+      ...(form.healthcareRegime ? { healthcareRegime: form.healthcareRegime } : {}),
+      city: form.city.trim(),
+      neighborhood: form.neighborhood.trim(),
+      address: form.address.trim(),
+      ...(form.description.trim() ? { description: form.description.trim() } : {}),
     }
-
     create.mutate(payload, { onSuccess: () => navigate('/dashboard/usuarios') })
   }
 
   return (
-    <div className="w-full space-y-4">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => navigate('/dashboard/usuarios')}
-          className="h-8 w-8 rounded-lg border border-input flex items-center justify-center cursor-pointer
-                     hover:bg-muted transition-colors shrink-0"
-          aria-label="Volver"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <div>
-          <h1 className="text-base font-semibold text-foreground">Nuevo usuario</h1>
-          <p className="text-xs text-muted-foreground">Complete los datos del usuario del servicio</p>
+    <div className="uv editing">
+      <style>{UV_CSS}</style>
+
+      <header className="topbar">
+        <div className="topbar-left">
+          <button className="btn-back" type="button" onClick={() => navigate('/dashboard/usuarios')}>
+            <ChevronLeft size={14} /> Volver
+          </button>
+          <h1 className="page-title">Nuevo usuario</h1>
         </div>
-      </div>
+        <div className="actions">
+          <button className="btn-cancel" type="button" onClick={() => navigate('/dashboard/usuarios')} disabled={create.isPending}>
+            <X size={14} /> Cancelar
+          </button>
+          <button className="btn-edit" type="button" onClick={save} disabled={create.isPending}>
+            <Check size={14} /> {create.isPending ? 'Guardando…' : 'Crear usuario'}
+          </button>
+        </div>
+      </header>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} noValidate>
-        <div className="rounded-xl border border-border bg-background shadow-sm divide-y divide-border">
-
-          {/* Datos principales */}
-          <div className="px-6 py-5 space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Datos principales</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Cédula */}
-              <div className="sm:col-span-2">
-                <label htmlFor="su-id" className="block text-xs font-medium text-foreground mb-1">
-                  Número de identificación (cédula) <span className="text-destructive">*</span>
-                </label>
-                <input
-                  id="su-id"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  value={form.id}
-                  onChange={(e) => handleChange('id', e.target.value)}
-                  onBlur={() => handleBlur('id')}
-                  placeholder="Ej: 1234567890"
-                  className={`h-9 w-full rounded-lg border px-3 text-sm bg-background
-                    focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors
-                    ${errors.id ? 'border-destructive focus:border-destructive' : 'border-input focus:border-primary'}`}
-                />
-                {errors.id && <p className="mt-1 text-xs text-destructive">{errors.id}</p>}
-              </div>
-
-              {/* Primer nombre */}
-              <div>
-                <label htmlFor="su-first-name" className="block text-xs font-medium text-foreground mb-1">
-                  Primer nombre <span className="text-destructive">*</span>
-                </label>
-                <input
-                  id="su-first-name"
-                  type="text"
-                  autoComplete="given-name"
-                  value={form.firstName}
-                  onChange={(e) => handleChange('firstName', e.target.value)}
-                  onBlur={() => handleBlur('firstName')}
-                  placeholder="Ej: María"
-                  className={`h-9 w-full rounded-lg border px-3 text-sm bg-background
-                    focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors
-                    ${errors.firstName ? 'border-destructive focus:border-destructive' : 'border-input focus:border-primary'}`}
-                />
-                {errors.firstName && <p className="mt-1 text-xs text-destructive">{errors.firstName}</p>}
-              </div>
-
-              {/* Segundo nombre */}
-              <div>
-                <label htmlFor="su-second-name" className="block text-xs font-medium text-foreground mb-1">
-                  Segundo nombre
-                </label>
-                <input
-                  id="su-second-name"
-                  type="text"
-                  autoComplete="additional-name"
-                  value={form.secondName}
-                  onChange={(e) => handleChange('secondName', e.target.value)}
-                  placeholder="Ej: Lucía"
-                  className="h-9 w-full rounded-lg border border-input px-3 text-sm bg-background
-                             focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
-                />
-              </div>
-
-              {/* Primer apellido */}
-              <div>
-                <label htmlFor="su-first-surname" className="block text-xs font-medium text-foreground mb-1">
-                  Primer apellido <span className="text-destructive">*</span>
-                </label>
-                <input
-                  id="su-first-surname"
-                  type="text"
-                  autoComplete="family-name"
-                  value={form.firstSurname}
-                  onChange={(e) => handleChange('firstSurname', e.target.value)}
-                  onBlur={() => handleBlur('firstSurname')}
-                  placeholder="Ej: García"
-                  className={`h-9 w-full rounded-lg border px-3 text-sm bg-background
-                    focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors
-                    ${errors.firstSurname ? 'border-destructive focus:border-destructive' : 'border-input focus:border-primary'}`}
-                />
-                {errors.firstSurname && <p className="mt-1 text-xs text-destructive">{errors.firstSurname}</p>}
-              </div>
-
-              {/* Segundo apellido */}
-              <div>
-                <label htmlFor="su-second-surname" className="block text-xs font-medium text-foreground mb-1">
-                  Segundo apellido
-                </label>
-                <input
-                  id="su-second-surname"
-                  type="text"
-                  value={form.secondSurname}
-                  onChange={(e) => handleChange('secondSurname', e.target.value)}
-                  placeholder="Ej: López"
-                  className="h-9 w-full rounded-lg border border-input px-3 text-sm bg-background
-                             focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
-                />
-              </div>
-
-              {/* Teléfono */}
-              <div>
-                <label htmlFor="su-phone" className="block text-xs font-medium text-foreground mb-1">
-                  Teléfono <span className="text-destructive">*</span>
-                </label>
-                <input
-                  id="su-phone"
-                  type="tel"
-                  inputMode="numeric"
-                  autoComplete="tel"
-                  value={form.phone}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                  onBlur={() => handleBlur('phone')}
-                  placeholder="3001234567"
-                  className={`h-9 w-full rounded-lg border px-3 text-sm bg-background
-                    focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors
-                    ${errors.phone ? 'border-destructive focus:border-destructive' : 'border-input focus:border-primary'}`}
-                />
-                {errors.phone && <p className="mt-1 text-xs text-destructive">{errors.phone}</p>}
-              </div>
-
-              {/* Email */}
-              <div>
-                <label htmlFor="su-email" className="block text-xs font-medium text-foreground mb-1">
-                  Correo electrónico
-                </label>
-                <input
-                  id="su-email"
-                  type="email"
-                  autoComplete="email"
-                  value={form.email}
-                  onChange={(e) => handleChange('email', e.target.value)}
-                  onBlur={() => handleBlur('email')}
-                  placeholder="correo@ejemplo.com"
-                  className={`h-9 w-full rounded-lg border px-3 text-sm bg-background
-                    focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors
-                    ${errors.email ? 'border-destructive focus:border-destructive' : 'border-input focus:border-primary'}`}
-                />
-                {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
-              </div>
-
-              {/* Fecha de nacimiento */}
-              <div>
-                <label htmlFor="su-birth" className="block text-xs font-medium text-foreground mb-1">
-                  Fecha de nacimiento
-                </label>
-                <input
-                  id="su-birth"
-                  type="date"
-                  value={form.birthDate}
-                  onChange={(e) => handleChange('birthDate', e.target.value)}
-                  className="h-9 w-full rounded-lg border border-input px-3 text-sm bg-background
-                             focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
-                />
-              </div>
-            </div>
+      <main className="content">
+        <div className="field-grid">
+          <div className="field">
+            <span className="field-label">Tipo de documento<span className="req">*</span></span>
+            <select className="field-input" value={form.documentType} onChange={(e) => set('documentType', e.target.value as FormState['documentType'])}>
+              <option value="" disabled>SELECCIONAR...</option>
+              {DOCUMENT_TYPES.map((code) => (
+                <option key={code} value={code}>{code} — {DOCUMENT_TYPE_LABELS[code]}</option>
+              ))}
+            </select>
+            {errors.documentType && <span className="err">{errors.documentType}</span>}
           </div>
-
-          {/* Ubicación */}
-          <div className="px-6 py-5 space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ubicación</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="su-city" className="block text-xs font-medium text-foreground mb-1">Ciudad</label>
-                <input
-                  id="su-city"
-                  type="text"
-                  value={form.city}
-                  onChange={(e) => handleChange('city', e.target.value)}
-                  placeholder="Ej: Bogotá"
-                  className="h-9 w-full rounded-lg border border-input px-3 text-sm bg-background
-                             focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
-                />
-              </div>
-              <div>
-                <label htmlFor="su-neighborhood" className="block text-xs font-medium text-foreground mb-1">Barrio</label>
-                <input
-                  id="su-neighborhood"
-                  type="text"
-                  value={form.neighborhood}
-                  onChange={(e) => handleChange('neighborhood', e.target.value)}
-                  placeholder="Ej: Chapinero"
-                  className="h-9 w-full rounded-lg border border-input px-3 text-sm bg-background
-                             focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label htmlFor="su-address" className="block text-xs font-medium text-foreground mb-1">Dirección</label>
-                <input
-                  id="su-address"
-                  type="text"
-                  autoComplete="street-address"
-                  value={form.address}
-                  onChange={(e) => handleChange('address', e.target.value)}
-                  placeholder="Ej: Cra 7 # 45-20"
-                  className="h-9 w-full rounded-lg border border-input px-3 text-sm bg-background
-                             focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
-                />
-              </div>
-            </div>
+          <div className="field">
+            <span className="field-label">Cédula<span className="req">*</span></span>
+            <input className="field-input" inputMode="numeric" autoComplete="off" value={form.id} onChange={(e) => set('id', e.target.value)} />
+            {errors.id && <span className="err">{errors.id}</span>}
           </div>
-
-          {/* Descripción */}
-          <div className="px-6 py-5 space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Información adicional</h2>
-            <div>
-              <label htmlFor="su-desc" className="block text-xs font-medium text-foreground mb-1">Descripción</label>
-              <textarea
-                id="su-desc"
-                value={form.description}
-                onChange={(e) => handleChange('description', e.target.value)}
-                placeholder="Notas adicionales sobre el usuario..."
-                rows={3}
-                className="w-full rounded-lg border border-input px-3 py-2 text-sm bg-background resize-none
-                           focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
-              />
-            </div>
+          <div className="field">
+            <span className="field-label">Primer nombre<span className="req">*</span></span>
+            <input className="field-input" value={form.firstName} onChange={(e) => set('firstName', e.target.value)} />
+            {errors.firstName && <span className="err">{errors.firstName}</span>}
           </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-2 px-6 py-4 bg-muted/10">
-            <button
-              type="button"
-              onClick={() => navigate('/dashboard/usuarios')}
-              disabled={create.isPending}
-              className="h-8 px-4 rounded-lg border border-input text-xs font-medium cursor-pointer
-                         hover:bg-muted disabled:opacity-50 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={create.isPending}
-              className="h-8 px-5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold
-                         cursor-pointer hover:bg-primary/90 disabled:opacity-50 active:scale-[0.98]
-                         transition-all duration-200 shadow-sm"
-            >
-              {create.isPending ? 'Guardando...' : 'Crear usuario'}
-            </button>
+          <div className="field">
+            <span className="field-label">Segundo nombre<span className="req">*</span></span>
+            <input className="field-input" value={form.secondName} onChange={(e) => set('secondName', e.target.value)} />
+            {errors.secondName && <span className="err">{errors.secondName}</span>}
+          </div>
+          <div className="field">
+            <span className="field-label">Primer apellido<span className="req">*</span></span>
+            <input className="field-input" value={form.firstSurname} onChange={(e) => set('firstSurname', e.target.value)} />
+            {errors.firstSurname && <span className="err">{errors.firstSurname}</span>}
+          </div>
+          <div className="field">
+            <span className="field-label">Segundo apellido<span className="req">*</span></span>
+            <input className="field-input" value={form.secondSurname} onChange={(e) => set('secondSurname', e.target.value)} />
+            {errors.secondSurname && <span className="err">{errors.secondSurname}</span>}
+          </div>
+          <div className="field">
+            <span className="field-label">Género<span className="req">*</span></span>
+            <select className="field-input" value={form.gender} onChange={(e) => set('gender', e.target.value as FormState['gender'])}>
+              <option value="" disabled>SELECCIONAR...</option>
+              <option value="MASCULINO">MASCULINO</option>
+              <option value="FEMENINO">FEMENINO</option>
+            </select>
+            {errors.gender && <span className="err">{errors.gender}</span>}
+          </div>
+          <div className="field">
+            <span className="field-label">{form.birthMode === 'age' ? 'Edad aproximada' : 'Fecha de nacimiento'}<span className="req">*</span></span>
+            <div className="birth-row">
+              {form.birthMode === 'exact' ? (
+                <input className="field-input" type="date" value={form.birthDate} onChange={(e) => set('birthDate', e.target.value)} />
+              ) : (
+                <input className="field-input" type="number" min={1} max={120} placeholder="Ej. 30" value={form.age} onChange={(e) => set('age', e.target.value)} />
+              )}
+              <button
+                type="button"
+                className="birth-toggle"
+                onClick={toggleBirth}
+                title={form.birthMode === 'exact' ? 'Cambiar a edad aproximada' : 'Cambiar a fecha exacta'}
+              >
+                {form.birthMode === 'exact' ? <Hash size={14} /> : <CalendarDays size={14} />}
+              </button>
+            </div>
+            {errors.birth && <span className="err">{errors.birth}</span>}
+          </div>
+          <div className="field">
+            <span className="field-label">Teléfono<span className="req">*</span></span>
+            <input className="field-input" type="tel" inputMode="numeric" maxLength={10} value={form.phone} onChange={(e) => set('phone', e.target.value)} />
+            {errors.phone && <span className="err">{errors.phone}</span>}
+          </div>
+          <div className="field">
+            <span className="field-label">Correo<span className="req">*</span></span>
+            <input className="field-input" type="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
+            {errors.email && <span className="err">{errors.email}</span>}
+          </div>
+          <div className="field">
+            <span className="field-label">Régimen<span className="req">*</span></span>
+            <select className="field-input" value={form.healthcareRegime} onChange={(e) => set('healthcareRegime', e.target.value as FormState['healthcareRegime'])}>
+              <option value="" disabled>SELECCIONAR...</option>
+              <option value="CONTRIBUTIVO">CONTRIBUTIVO</option>
+              <option value="SUBSIDIADO">SUBSIDIADO</option>
+            </select>
+            {errors.healthcareRegime && <span className="err">{errors.healthcareRegime}</span>}
+          </div>
+          <div className="field">
+            <span className="field-label">Ciudad<span className="req">*</span></span>
+            <input className="field-input" value={form.city} onChange={(e) => set('city', e.target.value)} />
+            {errors.city && <span className="err">{errors.city}</span>}
+          </div>
+          <div className="field">
+            <span className="field-label">Barrio<span className="req">*</span></span>
+            <input className="field-input" value={form.neighborhood} onChange={(e) => set('neighborhood', e.target.value)} />
+            {errors.neighborhood && <span className="err">{errors.neighborhood}</span>}
+          </div>
+          <div className="field">
+            <span className="field-label">Dirección<span className="req">*</span></span>
+            <input className="field-input" value={form.address} onChange={(e) => set('address', e.target.value)} />
+            {errors.address && <span className="err">{errors.address}</span>}
+          </div>
+          <div className="field field-span">
+            <span className="field-label">Descripción</span>
+            <textarea className="field-input" rows={3} value={form.description} onChange={(e) => set('description', e.target.value)} />
           </div>
         </div>
-      </form>
+      </main>
     </div>
   )
 }

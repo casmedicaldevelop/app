@@ -107,8 +107,8 @@ export default function StaffListPage() {
                        transition-colors"
           >
             <option value="">Todos</option>
-            <option value="ADMIN">Admin</option>
-            <option value="USER">Auxiliar</option>
+            <option value="ADMINISTRADOR">Administrador</option>
+            <option value="AUXILIAR">Auxiliar</option>
           </select>
         </div>
       </div>

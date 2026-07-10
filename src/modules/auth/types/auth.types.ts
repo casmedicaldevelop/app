@@ -1,4 +1,4 @@
-export type Role = 'ADMIN' | 'USER'
+export type Role = 'ADMINISTRADOR' | 'AUXILIAR'
 
 export interface UserModule {
   name: string
